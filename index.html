@@ -1,0 +1,1212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MOS Device Physics - Interactive Notes</title>
+<meta name="description" content="Interactive notes on MOS device physics (structure, threshold voltage, I-V, transconductance, second-order effects, capacitances) based on Razavi, Chapter 2.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<link rel="stylesheet" href="css/style.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<script defer src="js/common.js"></script>
+<script defer src="js/structure.js"></script>
+<script defer src="js/struct3d.js"></script>
+<script defer src="js/threshold.js"></script>
+<script defer src="js/iv.js"></script>
+<script defer src="js/ivwhy.js"></script>
+<script defer src="js/gm.js"></script>
+<script defer src="js/second.js"></script>
+<script defer src="js/caps.js"></script>
+<script defer src="js/ss.js"></script>
+<script defer src="js/mirror.js"></script>
+<script defer src="js/main.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#home">MOS Device Physics<small>EE 303 &middot; interactive notes</small></a>
+    <button class="preset" id="anim-toggle" aria-pressed="true" title="Play or pause the animations">Animation: on</button>
+    <nav class="tabs" aria-label="Modules">
+      <a href="#home" data-tab="home">Home</a>
+      <a href="#structure" data-tab="structure">1 Structure</a>
+      <a href="#threshold" data-tab="threshold">2 Threshold</a>
+      <a href="#iv" data-tab="iv">3 I-V</a>
+      <a href="#gm" data-tab="gm">4 g<sub>m</sub></a>
+      <a href="#second" data-tab="second">5 Second-order</a>
+      <a href="#caps" data-tab="caps">6 Capacitances</a>
+      <a href="#ss" data-tab="ss">7 Small-signal</a>
+      <a href="#fin" data-tab="fin">8 FinFET</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" id="main">
+
+<section class="module" id="home" data-title="Home">
+  <div class="hero">
+    <h1>Move the knobs. Watch the transistor.</h1>
+    <p>Chapter 2 of the textbook, rebuilt so you can change a voltage and see the channel, the charge and the current respond. Everything here is drawn and computed live in your browser. Pick a module; each one is its own page.</p>
+    <div class="keyline">
+      <div><b>Gate electrostatics sets the charge</b>\(Q_d = WC_{ox}(V_{GS}-V_{TH})\)</div>
+      <div><b>The lateral field sets the current</b>\(I = Q_d\,v,\; v=\mu E\)</div>
+      <div><b>Local derivatives set the circuit model</b>\(g_m = \partial I_D/\partial V_{GS}\)</div>
+    </div>
+  </div>
+  <div class="modgrid">
+    <a class="modcard" href="#structure"><span class="num">1</span><b>Structure and terminals</b><span>Dimensions, NMOS vs PMOS, which terminal is the source.</span></a>
+    <a class="modcard" href="#threshold"><span class="num">2</span><b>Threshold voltage</b><span>Accumulation, depletion, inversion, band diagram, body bias.</span></a>
+    <a class="modcard" href="#iv"><span class="num">3</span><b>I-V characteristics</b><span>Channel charge, pinch-off, triode vs saturation.</span></a>
+    <a class="modcard" href="#gm"><span class="num">4</span><b>Transconductance</b><span>The slope of the I-V curve, three faces of g<sub>m</sub>, efficiency vs speed.</span></a>
+    <a class="modcard" href="#second"><span class="num">5</span><b>Second-order effects</b><span>Body effect, channel-length modulation, subthreshold.</span></a>
+    <a class="modcard" href="#caps"><span class="num">6</span><b>Capacitances</b><span>C<sub>GS</sub>, C<sub>GD</sub>, C<sub>GB</sub> across regions, junction caps, Miller.</span></a>
+    <a class="modcard" href="#ss"><span class="num">7</span><b>Small-signal model</b><span>g<sub>m</sub>, r<sub>o</sub>, g<sub>mb</sub>, PMOS, SPICE Level 1, how to derive the model.</span></a>
+    <a class="modcard" href="#fin"><span class="num">8</span><b>FinFET</b><span>Fins, tri-gate width, pitch, and sizing in whole fins.</span></a>
+  </div>
+  <p class="note" style="margin-top:20px">Suggested order: 1 to 8. Use the keys &larr; and &rarr; (when no slider is focused) or the buttons at the bottom of each page to move between modules. A link such as <code>#gm</code> opens that module directly.</p>
+</section>
+
+<!-- ================= MODULE 1: STRUCTURE ================= -->
+<section class="module" id="structure" data-title="1 Structure">
+  <span class="tag">Module 1</span>
+  <h2>Structure and terminals</h2>
+  <p class="lead">A MOSFET is a gate over an insulator over a body, with two diffusions on either side. Change the dimensions, flip between NMOS, PMOS and CMOS, and click any region to see what it does.</p>
+
+  <div class="card">
+    <div class="seg" id="seg-type" role="group" aria-label="Device type">
+      <button data-type="nmos" aria-pressed="true">NMOS</button>
+      <button data-type="pmos" aria-pressed="false">PMOS</button>
+      <button data-type="cmos" aria-pressed="false">CMOS pair</button>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label for="s-ld">Drawn gate length L<sub>drawn</sub><output id="o-ld"></output></label><input id="s-ld" type="range" min="10" max="180" step="1" value="40"></div>
+      <div class="ctl"><label for="s-lD">Side diffusion L<sub>D</sub> (each side)<output id="o-lD"></output></label><input id="s-lD" type="range" min="0" max="18" step="1" value="8"></div>
+      <div class="ctl"><label for="s-tox">Oxide thickness t<sub>ox</sub><output id="o-tox"></output></label><input id="s-tox" type="range" min="0.8" max="10" step="0.1" value="1.5"></div>
+      <div class="ctl"><label for="s-w">Width W<output id="o-w"></output></label><input id="s-w" type="range" min="0.1" max="10" step="0.1" value="1"></div>
+    </div>
+  </div>
+
+  <div class="cols">
+<div class="card">
+    <canvas id="cv-struct" class="pick" width="760" height="400" aria-label="MOSFET cross-section with labelled regions"></canvas>
+    <p class="caption">Lengths are drawn to scale across the gate; the junction depth is not. <span id="st-dimnote" hidden>Dimension lines appear in the single-device views.</span></p>
+    <div class="info" id="struct-info" aria-live="polite"></div>
+  </div>
+
+  <div class="card">
+    <h3>3D view: what the width W adds</h3>
+    <p class="note" style="margin:0 0 8px">The cross-section above is one slice. The device extends into the page by W: the gate, oxide, channel and both junctions all get wider together, which is why W sets how much current the device can carry. Use the length, diffusion, oxide and width sliders above.</p>
+    <canvas id="cv-3d" class="pick" width="760" height="420" tabindex="0" aria-label="Three-dimensional view of the MOSFET. Drag or use arrow keys to rotate." style="cursor:grab;touch-action:pan-y"></canvas>
+    <div class="presets" style="margin-top:10px">
+      <button class="preset" id="t3-reset">Reset view</button>
+      <button class="preset" id="t3-glass" aria-pressed="true">See through the gate</button>
+      <button class="preset" id="t3-chan" aria-pressed="true">Show channel</button>
+    </div>
+    <p class="caption">Orange: width W (into the page). Blue: drawn length and effective length. With the gate transparent you can see the n+ junctions reaching under the gate edges by L<sub>D</sub> on each side, which is why L<sub>eff</sub> is shorter than the drawn gate. The oxide thickness is exaggerated.</p>
+  </div>
+</div>
+
+  <div class="cols">
+<div class="card">
+    <h3>What the dimensions mean</h3>
+    <div class="readouts">
+      <div><span class="k">L<sub>eff</sub> = L<sub>drawn</sub> &minus; 2L<sub>D</sub></span><span class="v" id="st-leff"></span></div>
+      <div><span class="k">Length lost to side diffusion</span><span class="v" id="st-lost"></span></div>
+      <div><span class="k">t<sub>ox</sub></span><span class="v" id="st-tox"></span></div>
+      <div><span class="k">C<sub>ox</sub> = &epsilon;<sub>ox</sub>/t<sub>ox</sub></span><span class="v" id="st-cox"></span></div>
+      <div><span class="k">Gate capacitance W&middot;L<sub>eff</sub>&middot;C<sub>ox</sub></span><span class="v" id="st-cg"></span></div>
+      <div><span class="k">W / L<sub>eff</sub></span><span class="v" id="st-ar"></span></div>
+    </div>
+    <p class="caption">W sets the charge-carrying capacity, L sets the lateral field path. The lecture example uses L<sub>eff</sub> &asymp; 10 nm and t<sub>ox</sub> &asymp; 15 &Aring;; drag L<sub>drawn</sub> down to 14 nm with L<sub>D</sub> = 2 nm and watch how much of the drawn length the side diffusion takes.</p>
+  </div>
+
+  <div class="card">
+    <h3>NMOS and PMOS side by side</h3>
+    <div class="tblwrap">
+    <table class="tbl">
+      <thead><tr><th></th><th>NMOS</th><th>PMOS</th></tr></thead>
+      <tbody>
+        <tr><td>Channel carriers</td><td>Mobile electrons</td><td>Mobile holes</td></tr>
+        <tr><td>Source / drain</td><td>n+ in p-type body</td><td>p+ in n-type body</td></tr>
+        <tr><td>Body</td><td>p-substrate</td><td>n-well</td></tr>
+        <tr><td>Body tie</td><td>Lowest supply (GND)</td><td>Highest supply (V<sub>DD</sub>)</td></tr>
+        <tr><td>Turns on when</td><td>V<sub>GS</sub> &gt; V<sub>TH</sub> &gt; 0</td><td>V<sub>GS</sub> &lt; V<sub>TH</sub> &lt; 0</td></tr>
+        <tr><td>Drain is the terminal at the</td><td>higher voltage</td><td>lower voltage</td></tr>
+      </tbody>
+    </table></div>
+    <p class="caption">Key rule: the n-well must stay at or above the source and drain potentials so its junctions stay reverse-biased and prevent parasitic conduction.</p>
+  </div>
+</div>
+
+  <div class="card">
+    <h3>Rule of differences: which terminal is the source?</h3>
+    <p class="lead" style="margin-top:0">The two diffusions are interchangeable. The device only responds to terminal differences, so compute V<sub>GS</sub>, V<sub>DS</sub> and V<sub>SB</sub> first. Set the voltage on the terminal you call the source, the one you call the drain, and the gate. For an NMOS the lower of the two voltages is the real source; if your labels disagree with that, the readout below shows the roles swapping.</p>
+    <div class="playgrid">
+      <div>
+        <div class="seg" id="seg-pg" role="group" aria-label="Playground device type">
+          <button data-type="nmos" aria-pressed="true">NMOS</button>
+          <button data-type="pmos" aria-pressed="false">PMOS</button>
+        </div>
+        <div class="controls">
+          <div class="ctl"><label for="pg-a">Source terminal voltage V<sub>S</sub><output id="pg-a-v"></output></label><input id="pg-a" type="range" min="0" max="1.8" step="0.01" value="0"></div>
+          <div class="ctl"><label for="pg-b">Drain terminal voltage V<sub>D</sub><output id="pg-b-v"></output></label><input id="pg-b" type="range" min="0" max="1.8" step="0.01" value="1.2"></div>
+          <div class="ctl"><label for="pg-g">Gate voltage<output id="pg-g-v"></output></label><input id="pg-g" type="range" min="0" max="1.8" step="0.01" value="1"></div>
+        </div>
+        <p><button class="preset" id="pg-swap">Swap the two voltages</button></p>
+        <div class="who"><div><span class="note">The terminal you call "source" acts as the</span><b id="pg-a-role"></b></div><div><span class="note">The terminal you call "drain" acts as the</span><b id="pg-b-role"></b></div></div>
+        <div class="readouts">
+          <div><span class="k">V<sub>GS</sub></span><span class="v" id="pg-vgs"></span></div>
+          <div><span class="k">V<sub>DS</sub></span><span class="v" id="pg-vds"></span></div>
+          <div><span class="k">Overdrive |V<sub>GS</sub>| &minus; |V<sub>TH</sub>|</span><span class="v" id="pg-vov"></span></div>
+          <div><span class="k">Reverse bias of source to body</span><span class="v" id="pg-vsb"></span></div>
+        </div>
+        <p style="margin:12px 0 0"><span id="pg-region" class="badge" aria-live="polite">-</span></p>
+        <p class="note" id="pg-rule"></p>
+      </div>
+      <div>
+        <div class="symrow">
+          <figure>
+            <svg viewBox="0 0 120 140" role="img" aria-label="NMOS symbol">
+              <path d="M10 70 H38 M38 46 V94 M50 40 V56 M50 62 V78 M50 84 V100 M50 48 H92 V16 M50 92 H92 V124"/>
+              <path class="fillme" d="M72 92 L62 87 V97 Z"/>
+              <text x="98" y="20">D</text><text x="98" y="134">S</text><text x="2" y="62">G</text>
+            </svg>NMOS: arrow leaves the source
+          </figure>
+          <figure>
+            <svg viewBox="0 0 120 140" role="img" aria-label="PMOS symbol">
+              <path d="M10 70 H30 M38 46 V94 M50 40 V56 M50 62 V78 M50 84 V100 M50 48 H92 V16 M50 92 H92 V124"/>
+              <circle cx="34" cy="70" r="4"/>
+              <path class="fillme" d="M60 48 L70 43 V53 Z"/>
+              <text x="98" y="20">S</text><text x="98" y="134">D</text><text x="2" y="62">G</text>
+            </svg>PMOS: source on top, arrow enters
+          </figure>
+        </div>
+        <p class="note" style="margin-top:12px">The PMOS source sits on top because it is at the higher potential. Most circuits tie NMOS and PMOS bodies to ground and V<sub>DD</sub>, so the body connection is usually omitted from the symbol; digital schematics use plain switch symbols.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Check yourself</h3>
+    <details class="q"><summary>A drawn gate is 40 nm long and each junction diffuses 8 nm under it. What is L<sub>eff</sub>?</summary><div class="ans">L<sub>eff</sub> = 40 &minus; 2&middot;8 = 24 nm. The electrical channel is shorter than the drawn one.</div></details>
+    <details class="q"><summary>Why does an NMOS body go to the most negative supply?</summary><div class="ans">The source/drain-to-body junctions are diodes. Holding the body at the lowest potential keeps them reverse-biased, so current flows only through the channel.</div></details>
+    <details class="q"><summary>Both terminals of an NMOS are at 0.6 V and 1.2 V, the gate is at 1.0 V. Which one is the source and what is V<sub>GS</sub>?</summary><div class="ans">The source is the 0.6 V terminal (lower voltage for an NMOS), so V<sub>GS</sub> = 1.0 &minus; 0.6 = 0.4 V, and V<sub>SB</sub> = 0.6 V. Check it in the playground above.</div></details>
+  </div>
+<nav class="pager" aria-label="Module navigation"><a href="#home">&larr; Home</a><a href="#threshold">2 Threshold &rarr;</a></nav>
+</section>
+
+<!-- ================= MODULE 2: THRESHOLD ================= -->
+<section class="module" id="threshold" data-title="2 Threshold">
+  <span class="tag">Module 2</span>
+  <h2>Threshold voltage: accumulation, depletion, inversion</h2>
+  <p class="lead">Sweep the gate voltage and watch the silicon surface change state: holes pile up, then get pushed away, then electrons arrive. The band diagram and the surface-potential plot show why threshold happens at \(2\Phi_F\).</p>
+
+  <div class="cols">
+<div class="card">
+    <h3>Try a state</h3>
+    <div class="presets" id="t-presets">
+      <button class="preset" data-p="acc">Accumulation</button>
+      <button class="preset" data-p="flat">Flat band</button>
+      <button class="preset" data-p="dep">Depletion</button>
+      <button class="preset" data-p="weak">Weak inversion</button>
+      <button class="preset" data-p="th">At threshold</button>
+      <button class="preset" data-p="inv">Strong inversion</button>
+      <button class="preset" data-p="body">Body effect (V<sub>SB</sub> = 1 V)</button>
+    </div>
+    <div class="seg" id="seg-mos" role="group" aria-label="Device type">
+      <button data-type="nmos" aria-pressed="true">NMOS (p-substrate)</button>
+      <button data-type="pmos" aria-pressed="false">PMOS (n-substrate)</button>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label for="s-vg"><span id="t-vlab">V<sub>GS</sub></span><output id="o-vg"></output></label><input id="s-vg" type="range" min="-2" max="2" step="0.01" value="0.8"></div>
+      <div class="ctl"><label for="s-vsb">Source-to-body reverse bias V<sub>SB</sub><output id="o-vsb"></output></label><input id="s-vsb" type="range" min="0" max="1.5" step="0.05" value="0"></div>
+      <div class="ctl"><label for="s-n">Substrate doping N<sub>sub</sub><output id="o-n"></output></label><input id="s-n" type="range" min="15" max="18.5" step="0.05" value="18"></div>
+      <div class="ctl"><label for="s-ttox">Oxide thickness t<sub>ox</sub><output id="o-ttox"></output></label><input id="s-ttox" type="range" min="1" max="8" step="0.1" value="3"></div>
+      <div class="ctl"><label for="s-imp">Channel implant (sheet charge)<output id="o-imp"></output></label><input id="s-imp" type="range" min="-4" max="4" step="0.1" value="0"></div>
+    </div>
+    <p class="note" id="t-pmosnote" hidden>PMOS: every polarity is reversed. The slider is the NMOS-equivalent drive, so V<sub>GS</sub> and V<sub>TH</sub> read negative; the band diagram stays in the NMOS frame.</p>
+  </div>
+
+  <div class="card">
+    <canvas id="cv-mos" width="760" height="360" aria-label="MOS cross-section showing charge at the silicon surface"></canvas>
+    <p class="caption">Gray signs: fixed ionized dopants in the depletion region. Orange dots: holes. Cyan dots: electrons. The gate signs show the charge on the gate, which always mirrors the charge in the silicon. Small V<sub>DS</sub> = 0.1 V as in the lecture figures.</p>
+  </div>
+</div>
+
+  <div class="cols">
+<div class="card">
+    <canvas id="cv-band" width="760" height="330" aria-label="Energy band diagram across gate, oxide and silicon"></canvas>
+    <p class="caption">Energy bands along the vertical axis through the gate, oxide and silicon (schematic, ideal MOS structure). The orange gate level sits at &minus;V<sub>G</sub> below the silicon Fermi level. Where E<sub>i</sub> dips below E<sub>F</sub> (cyan) the surface has become n-type. The channel implant slider is not drawn in this diagram.</p>
+  </div>
+
+  <div class="card">
+    <canvas id="cv-psi" width="760" height="260" aria-label="Surface potential versus gate voltage"></canvas>
+    <p class="caption">The surface potential rises with the gate voltage until it reaches 2&Phi;<sub>F</sub> + V<sub>SB</sub>. After that it stays put: every extra volt on the gate goes into inversion electrons, Q<sub>inv</sub> = C<sub>ox</sub>(V<sub>G</sub> &minus; V<sub>TH</sub>), and the depletion region stops growing.</p>
+  </div>
+</div>
+
+  <div class="card">
+    <h3>Numbers</h3>
+    <div class="note" style="margin:0 0 6px">Change the bias or the device right here as well; the same sliders control the diagrams above.</div>
+    <div class="seg mirror-seg" data-src="seg-mos" role="group" aria-label="Device type (mirror)"></div>
+    <div class="controls mirror" data-src="s-vg s-vsb s-n s-ttox s-imp" style="margin-bottom:12px"></div>
+    <p style="margin:0 0 10px"><span id="t-state" class="badge" aria-live="polite">-</span></p>
+    <div class="readouts">
+      <div><span class="k">Flat-band voltage V<sub>FB</sub></span><span class="v" id="t-vfb"></span></div>
+      <div><span class="k">&Phi;<sub>F</sub> = (kT/q) ln(N<sub>sub</sub>/n<sub>i</sub>)</span><span class="v" id="t-phif"></span></div>
+      <div><span class="k">Threshold voltage V<sub>TH</sub></span><span class="v" id="t-vth"></span></div>
+      <div><span class="k">Body-effect coefficient &gamma;</span><span class="v" id="t-gam"></span></div>
+      <div><span class="k">Max depletion width</span><span class="v" id="t-wdmax"></span></div>
+      <div><span class="k">C<sub>ox</sub></span><span class="v" id="t-cox"></span></div>
+      <div><span class="k">Surface potential &psi;<sub>s</sub></span><span class="v" id="t-psi"></span></div>
+      <div><span class="k">Depletion width now</span><span class="v" id="t-wd"></span></div>
+      <div><span class="k">Depletion charge Q<sub>dep</sub></span><span class="v" id="t-qdep"></span></div>
+      <div><span class="k">Inversion charge Q<sub>inv</sub></span><span class="v" id="t-qinv"></span></div>
+      <div><span class="k">Depletion capacitance C<sub>dep</sub></span><span class="v" id="t-cdep"></span></div>
+    </div>
+    <h3 style="margin-top:16px">Where the gate voltage goes</h3>
+    <div class="splitbar" aria-hidden="true"><span class="ox" id="sb-ox"></span><span class="psi" id="sb-psi"></span></div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>across the oxide (V<sub>ox</sub>)</span><span><i style="background:var(--warm)"></i>in the silicon (&psi;<sub>s</sub>)</span></div>
+    <p class="caption" id="sb-txt"></p>
+    <p class="caption">The oxide and the depletion region act as two capacitors in series, a voltage divider (C<sub>ox</sub> and C<sub>dep</sub>). Silicon constants: n<sub>i</sub> = 10<sup>10</sup> cm<sup>&minus;3</sup>, &epsilon;<sub>si</sub> = 11.8&epsilon;<sub>0</sub>, n+ polysilicon gate, T = 300 K.</p>
+  </div>
+
+  <div class="cols">
+<div class="card">
+    <h3>Where V<sub>TH</sub> comes from</h3>
+    <details open>
+      <summary>The formula, term by term</summary>
+      <div>\[ V_{TH} = \Phi_{MS} + 2\Phi_F + \frac{Q_{dep}}{C_{ox}}, \qquad \Phi_F = \frac{kT}{q}\ln\frac{N_{sub}}{n_i}, \qquad Q_{dep} = \sqrt{4 q\,\epsilon_{si}\,|\Phi_F|\,N_{sub}} \]
+      <ul>
+        <li>\(\Phi_{MS}\) (work-function difference): the gate voltage that flattens the bands, V<sub>FB</sub> in the plot.</li>
+        <li>\(2\Phi_F\): the band bending needed for the surface to be as n-type as the bulk is p-type.</li>
+        <li>\(Q_{dep}/C_{ox}\): the extra gate voltage that supports the fixed depletion charge across the oxide.</li>
+      </ul></div>
+    </details>
+    <details>
+      <summary>Why V<sub>TH</sub> moves with each knob</summary>
+      <div><ul>
+        <li><b>More doping</b> raises \(\Phi_F\) and \(Q_{dep}\), so V<sub>TH</sub> rises while the depletion width shrinks.</li>
+        <li><b>Thinner oxide</b> raises C<sub>ox</sub>, so the \(Q_{dep}/C_{ox}\) term shrinks and the gate has more control.</li>
+        <li><b>Channel implant</b>: in practice V<sub>TH</sub> is set by implanting dopants into the channel. A thin p+ sheet raises the NMOS threshold; a negative dose lowers it.</li>
+        <li><b>Source-to-body bias</b> widens the depletion region, which raises V<sub>TH</sub> (body effect):
+        \[ V_{TH} = V_{TH0} + \gamma\left(\sqrt{2\Phi_F + V_{SB}} - \sqrt{2\Phi_F}\right), \quad \gamma = \frac{\sqrt{2q\epsilon_{si}N_{sub}}}{C_{ox}} \]
+        <a href="#second">Module 5</a> builds on this.</li>
+      </ul></div>
+    </details>
+  </div>
+
+  <div class="card">
+    <h3>Check yourself</h3>
+    <details class="q"><summary>What happens to the holes near the surface when the gate of an NMOS goes positive?</summary><div class="ans">They are repelled, leaving fixed negative acceptor ions behind. That barren region is the depletion region. There are no mobile carriers yet, so no current.</div></details>
+    <details class="q"><summary>Once V<sub>G</sub> &gt; V<sub>TH</sub>, why does the depletion region stop growing?</summary><div class="ans">The surface potential is pinned at 2&Phi;<sub>F</sub> (+ V<sub>SB</sub>). Extra gate charge is balanced by mobile electrons supplied by the n+ regions: Q<sub>inv</sub> = C<sub>ox</sub>(V<sub>G</sub> &minus; V<sub>TH</sub>).</div></details>
+    <details class="q"><summary>You double N<sub>sub</sub>. Which way do V<sub>TH</sub> and the maximum depletion width move?</summary><div class="ans">V<sub>TH</sub> goes up (larger &Phi;<sub>F</sub> and Q<sub>dep</sub>); the maximum depletion width goes down. Try it with the doping slider.</div></details>
+    <details class="q"><summary>What does a PMOS look like in this picture?</summary><div class="ans">The same story with every polarity reversed: n-type body, a negative gate voltage, holes forming the inversion layer, and a negative V<sub>TH</sub>.</div></details>
+  </div>
+</div>
+<nav class="pager" aria-label="Module navigation"><a href="#structure">&larr; 1 Structure</a><a href="#iv">3 I-V &rarr;</a></nav>
+</section>
+
+<!-- ================= MODULE 3: I-V ================= -->
+<section class="module" id="iv" data-title="3 I-V">
+  <span class="tag">Module 3</span>
+  <h2>I-V characteristics: from channel charge to the square law</h2>
+  <p class="lead">Drag the sliders, or drag directly on the I<sub>D</sub>-V<sub>DS</sub> plot. The cross-section shows the inversion layer thickness at every point of the channel; the plot under it shows the channel potential V(x) that produces it.</p>
+
+  <div class="cols">
+<div class="card">
+    <h3>Try a scenario</h3>
+    <div class="presets" id="presets">
+      <button class="preset" data-p="cutoff">Cutoff</button>
+      <button class="preset" data-p="uniform">V<sub>DS</sub> = 0: uniform channel</button>
+      <button class="preset" data-p="deep">Deep triode (resistor)</button>
+      <button class="preset" data-p="triode">Triode</button>
+      <button class="preset" data-p="edge">Edge of saturation</button>
+      <button class="preset" data-p="sat">Saturation</button>
+      <button class="preset" data-p="short">Strong channel-length modulation</button>
+    </div>
+
+    <div class="controls">
+      <div class="group-title">Bias</div>
+      <div class="ctl"><label for="s-vgs">V<sub>GS</sub><output id="o-vgs"></output></label><input id="s-vgs" type="range" min="0" max="1.8" step="0.01"></div>
+      <div class="ctl"><label for="s-vds">V<sub>DS</sub><output id="o-vds"></output></label><input id="s-vds" type="range" min="0" max="1.8" step="0.01"></div>
+      <div class="group-title">Device and process</div>
+      <div class="ctl"><label for="s-wl">W/L (aspect ratio)<output id="o-wl"></output></label><input id="s-wl" type="range" min="1" max="100" step="1"></div>
+      <div class="ctl"><label for="s-kp">&mu;<sub>n</sub>C<sub>ox</sub><output id="o-kp"></output></label><input id="s-kp" type="range" min="20" max="400" step="10"></div>
+      <div class="ctl"><label for="s-vth">V<sub>TH</sub><output id="o-vth"></output></label><input id="s-vth" type="range" min="0.2" max="0.8" step="0.05"></div>
+      <div class="ctl"><label for="s-lam">&lambda; (channel-length modulation)<output id="o-lam"></output></label><input id="s-lam" type="range" min="0" max="0.3" step="0.01"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <canvas id="cv-curves" width="760" height="360" aria-label="Drain current versus drain-source voltage for several gate voltages"></canvas>
+    <p class="caption">Grey curves: fixed V<sub>GS</sub> steps. Orange: your current V<sub>GS</sub>. Dashed line: V<sub>DS</sub> = V<sub>GS</sub> &minus; V<sub>TH</sub>, the boundary between triode (shaded) and saturation. The dot is your operating point.</p>
+  </div>
+</div>
+
+  <div class="cols">
+<div class="card">
+    <canvas id="cv-section" width="760" height="440" aria-label="NMOS cross-section with inversion layer and channel potential plot"></canvas>
+    <p class="caption">Layer thickness &prop; V<sub>GS</sub> &minus; V(x) &minus; V<sub>TH</sub>. Electron speed is v = I/Q<sub>d</sub>, so they accelerate as the layer thins toward the drain and shoot through the depletion gap after pinch-off. Pinch-off position drawn with &Delta;L &prop; &lambda;(V<sub>DS</sub> &minus; V<sub>ov</sub>) and exaggerated for visibility.</p>
+  </div>
+
+  <div class="card">
+    <h3>Operating point</h3>
+    <div class="controls mirror" data-src="s-vgs s-vds s-wl s-kp s-vth s-lam" style="margin-bottom:12px"></div>
+    <p style="margin:0 0 10px"><span id="r-region" class="badge" aria-live="polite">-</span></p>
+    <div class="readouts">
+      <div><span class="k">V<sub>ov</sub> = V<sub>GS</sub> &minus; V<sub>TH</sub></span><span class="v" id="r-vov"></span></div>
+      <div><span class="k">V<sub>DS,sat</sub></span><span class="v" id="r-vdssat"></span></div>
+      <div><span class="k">I<sub>D</sub></span><span class="v" id="r-id"></span></div>
+      <div><span class="k">g<sub>m</sub> = &part;I<sub>D</sub>/&part;V<sub>GS</sub></span><span class="v" id="r-gm"></span></div>
+      <div><span class="k">r<sub>o</sub> (saturation)</span><span class="v" id="r-ro"></span></div>
+      <div><span class="k">g<sub>m</sub>r<sub>o</sub></span><span class="v" id="r-gain"></span></div>
+      <div><span class="k">R<sub>on</sub> = 1/(&mu;C<sub>ox</sub>(W/L)V<sub>ov</sub>)</span><span class="v" id="r-ron"></span></div>
+      <div><span class="k">V<sub>DS</sub>/I<sub>D</sub> (actual)</span><span class="v" id="r-rds"></span></div>
+    </div>
+    <p class="caption">Model: I<sub>D</sub> includes the factor (1 + &lambda;V<sub>DS</sub>) in both regions so the curve stays continuous at the boundary (SPICE Level-1 style). Subthreshold conduction is not included here; it is covered in <a href="#second">module 5</a>.</p>
+  </div>
+</div>
+
+  <div class="cols one">
+<div class="card">
+    <h3>The derivation, step by step</h3>
+    <details open>
+      <summary>1. Current is charge times velocity</summary>
+      <div>\(I = Q_d\, v\), with \(v=\mu E\) and \(E(x) = -\dfrac{dV}{dx}\). \(Q_d\) is the mobile charge per unit length along the current direction.</div>
+    </details>
+    <details>
+      <summary>2. Charge in the channel</summary>
+      <div>The oxide is a capacitor, and charge on the gate must be mirrored in the channel. At a point x where the channel potential is V(x):
+      \[ Q_d(x) = W C_{ox}\,[\,V_{GS} - V(x) - V_{TH}\,]. \]
+      With \(V_{DS}=0\) the channel is uniform; with \(V_{DS}>0\) it tapers toward the drain (the gap between the dashed line and the orange curve in the plot above).</div>
+    </details>
+    <details>
+      <summary>3. Integrate along the channel</summary>
+      <div>
+      \[ I_D = \mu_n C_{ox} W\,[V_{GS}-V(x)-V_{TH}]\,\frac{dV}{dx}
+      \;\Rightarrow\; \int_0^L I_D\,dx = \int_0^{V_{DS}} \mu_n C_{ox} W\,[V_{GS}-V-V_{TH}]\,dV \]
+      \[ \boxed{I_D = \mu_n C_{ox}\frac{W}{L}\Big[(V_{GS}-V_{TH})V_{DS} - \tfrac12 V_{DS}^2\Big]} \quad (\text{triode},\; V_{DS} \le V_{GS}-V_{TH}) \]
+      The same integral also gives the V(x) curve drawn above: \(V(x)=V_{ov}-\sqrt{V_{ov}^2 - 2x\,I_D/(\mu_n C_{ox}W)}\).</div>
+    </details>
+    <details>
+      <summary>4. Pinch-off and saturation</summary>
+      <div>When \(V(x)\) reaches \(V_{GS}-V_{TH}\) the bracket in \(Q_d\) hits zero, so the inversion layer ends before the drain. Integrating only up to that point:
+      \[ \boxed{I_D = \tfrac12 \mu_n C_{ox}\frac{W}{L'}(V_{GS}-V_{TH})^2}, \qquad L' = L-\Delta L,\;\; \frac{1}{L'} \approx \frac{1+\lambda V_{DS}}{L}. \]
+      The current does not stop at pinch-off: electrons reaching the gap are swept to the drain by the high field. The device now acts like a voltage-controlled current source with finite output resistance \(r_o\).</div>
+    </details>
+    <details>
+      <summary>5. Two limits worth remembering</summary>
+      <div>
+      <ul>
+        <li><b>Deep triode</b> (\(V_{DS}\ll 2(V_{GS}-V_{TH})\)): \(I_D \approx \mu_n C_{ox}\tfrac{W}{L}(V_{GS}-V_{TH})V_{DS}\), a resistor \(R_{on}=\big[\mu_n C_{ox}\tfrac{W}{L}(V_{GS}-V_{TH})\big]^{-1}\) that you control with the gate. Try the "Deep triode" scenario and compare the last two readouts.</li>
+        <li><b>Saturation</b>: \(g_m = \mu_n C_{ox}\tfrac{W}{L}V_{ov} = \sqrt{2\mu_n C_{ox}\tfrac{W}{L}I_D} = \tfrac{2I_D}{V_{ov}}\) (<a href="#gm">module 4</a> explores this).</li>
+      </ul></div>
+    </details>
+  </div>
+
+  <div class="card">
+    <h3>Summary: the drain current in each region, NMOS and PMOS</h3>
+    <p class="lead" style="margin-top:0">The derivation above gives three cases. Here they are side by side. For the PMOS everything is the same with the roles of the voltages mirrored: use <b>V<sub>SG</sub>, V<sub>SD</sub></b> and |V<sub>TH</sub>|, and the current flows from source to drain.</p>
+    <div class="tblwrap"><table class="tbl">
+      <thead><tr><th>Region</th><th>NMOS</th><th>PMOS</th></tr></thead>
+      <tbody>
+        <tr><td><b>Cutoff</b></td>
+          <td>V<sub>GS</sub> &lt; V<sub>TH</sub><br>\(I_D \approx 0\) (subthreshold leakage only)</td>
+          <td>V<sub>SG</sub> &lt; |V<sub>TH</sub>|, that is V<sub>GS</sub> &gt; V<sub>TH</sub> (V<sub>TH</sub> &lt; 0)<br>\(I_{SD} \approx 0\)</td></tr>
+        <tr><td><b>Triode</b><br>(linear)</td>
+          <td>V<sub>GS</sub> &gt; V<sub>TH</sub> and V<sub>DS</sub> &le; V<sub>GS</sub> &minus; V<sub>TH</sub><br>\(I_D=\mu_nC_{ox}\dfrac WL\Big[(V_{GS}-V_{TH})V_{DS}-\tfrac12V_{DS}^2\Big]\)</td>
+          <td>V<sub>SG</sub> &gt; |V<sub>TH</sub>| and V<sub>SD</sub> &le; V<sub>SG</sub> &minus; |V<sub>TH</sub>|<br>\(I_{SD}=\mu_pC_{ox}\dfrac WL\Big[(V_{SG}-|V_{TH}|)V_{SD}-\tfrac12V_{SD}^2\Big]\)</td></tr>
+        <tr><td><b>Saturation</b><br>(pinch-off)</td>
+          <td>V<sub>GS</sub> &gt; V<sub>TH</sub> and V<sub>DS</sub> &ge; V<sub>GS</sub> &minus; V<sub>TH</sub><br>\(I_D=\tfrac12\mu_nC_{ox}\dfrac WL(V_{GS}-V_{TH})^2(1+\lambda V_{DS})\)</td>
+          <td>V<sub>SG</sub> &gt; |V<sub>TH</sub>| and V<sub>SD</sub> &ge; V<sub>SG</sub> &minus; |V<sub>TH</sub>|<br>\(I_{SD}=\tfrac12\mu_pC_{ox}\dfrac WL(V_{SG}-|V_{TH}|)^2(1+\lambda V_{SD})\)</td></tr>
+        <tr><td><b>Deep triode</b><br>(resistor)</td>
+          <td>V<sub>DS</sub> &Lt; 2(V<sub>GS</sub> &minus; V<sub>TH</sub>)<br>\(R_{on}=\Big[\mu_nC_{ox}\dfrac WL(V_{GS}-V_{TH})\Big]^{-1}\)</td>
+          <td>V<sub>SD</sub> &Lt; 2(V<sub>SG</sub> &minus; |V<sub>TH</sub>|)<br>\(R_{on}=\Big[\mu_pC_{ox}\dfrac WL(V_{SG}-|V_{TH}|)\Big]^{-1}\)</td></tr>
+      </tbody>
+    </table></div>
+    <p class="caption"><b>What happens in each region.</b> <i>Cutoff:</i> no inversion layer, no current. <i>Triode:</i> the channel reaches the drain but tapers; the current depends on both the gate (charge) and V<sub>DS</sub> (field), and behaves like a gate-controlled resistor. <i>Saturation:</i> the channel is pinched off at the drain end, the current is set by the gate alone and is nearly independent of V<sub>DS</sub> (the (1 + &lambda;V<sub>DS</sub>) factor is the small slope left by channel-length modulation). The two formulas meet at V<sub>DS</sub> = V<sub>ov</sub>, where both give &frac12;&mu;C<sub>ox</sub>(W/L)V<sub>ov</sub>&sup2;. The factor (1 + &lambda;V<sub>DS</sub>) is sometimes kept in triode too, as in this page's plots, so the curve stays continuous. For the PMOS, V<sub>SG</sub> = &minus;V<sub>GS</sub> and V<sub>SD</sub> = &minus;V<sub>DS</sub>; with V<sub>TH</sub> &lt; 0 and &mu;<sub>p</sub> &asymp; 0.5&mu;<sub>n</sub> the PMOS gives about half the current at the same |V<sub>ov</sub>| and W/L.</p>
+  </div>
+
+  <div class="card" id="yw-card">
+    <h3>Why each region has its formula: watch the integral</h3>
+    <p class="lead" style="margin-top:0">The drain current is the area under one straight line. Pick a case, then move V<sub>GS</sub> and V<sub>DS</sub>: the shaded area is what the integral adds up, and it changes shape exactly where the formula changes.</p>
+    <div class="seg" id="yw-dev" role="group" aria-label="Device type"><button data-t="n" aria-pressed="true">NMOS</button><button data-t="p" aria-pressed="false">PMOS</button></div>
+    <div class="pills" id="yw-pre" style="align-items:center"><span class="pill" style="border:none;padding-left:0">Try:</span>
+      <button class="tok" data-g="0.3" data-d="0.5">Cutoff</button>
+      <button class="tok" data-g="1.0" data-d="0.2">Triode</button>
+      <button class="tok" data-g="1.0" data-d="0.6">Edge of saturation</button>
+      <button class="tok" data-g="1.0" data-d="1.2">Saturation</button></div>
+    <div class="controls">
+      <div class="ctl"><label for="yw-vg"><span id="yw-gl">V<sub>GS</sub></span><output id="o-yw-vg"></output></label><input id="yw-vg" type="range" min="0" max="1.4" step="0.01"></div>
+      <div class="ctl"><label for="yw-vd"><span id="yw-dl">V<sub>DS</sub></span><output id="o-yw-vd"></output></label><input id="yw-vd" type="range" min="0" max="1.4" step="0.01"></div>
+      <div class="ctl"><label for="yw-wl">W/L<output id="o-yw-wl"></output></label><input id="yw-wl" type="range" min="1" max="40" step="1"></div>
+    </div>
+    <canvas id="cv-yw" width="630" height="300" aria-label="Integrand and inversion layer for the chosen bias"></canvas>
+    <div class="info" id="yw-text" style="margin-top:10px" aria-live="polite"></div>
+    <div class="readouts" style="margin-top:10px">
+      <div><span class="k">Region</span><span class="v" id="yw-reg"></span></div>
+      <div><span class="k">V<sub>ov</sub> = V<sub>GS</sub> &minus; V<sub>TH</sub></span><span class="v" id="yw-vov"></span></div>
+      <div><span class="k">Area under the line</span><span class="v" id="yw-area"></span></div>
+      <div><span class="k">Drain current</span><span class="v" id="yw-id"></span></div>
+    </div>
+    <p class="caption">V<sub>TH</sub> = 0.4 V (|V<sub>TH</sub>| for the PMOS), &mu;<sub>n</sub>C<sub>ox</sub> = 200 &micro;A/V&sup2;, &mu;<sub>p</sub>C<sub>ox</sub> = 100 &micro;A/V&sup2;, channel-length modulation ignored. The PMOS is the same picture with V<sub>SG</sub> and V<sub>SD</sub> in place of V<sub>GS</sub> and V<sub>DS</sub>.</p>
+  </div>
+
+  <div class="card">
+    <h3>Check yourself</h3>
+    <details class="q"><summary>V<sub>GS</sub> = 1.0 V and V<sub>TH</sub> = 0.4 V. What is the smallest V<sub>DS</sub> that keeps the device in saturation?</summary>
+      <div class="ans">V<sub>DS,sat</sub> = V<sub>GS</sub> &minus; V<sub>TH</sub> = 0.6 V. Set the sliders to check where the operating point crosses the dashed line.</div></details>
+    <details class="q"><summary>Same W, V<sub>GS</sub>, V<sub>DS</sub>, but L is doubled. What happens to saturation current and to the slope of I<sub>D</sub> vs V<sub>DS</sub>?</summary>
+      <div class="ans">I<sub>D</sub> halves (W/L halves). Since &lambda; &prop; 1/L as well, the slope falls by about 4&times;. Longer devices are better current sources.</div></details>
+    <details class="q"><summary>If the inversion layer ends before the drain, why does current still flow?</summary>
+      <div class="ans">Pinch-off ends the <i>charge sheet</i>, not the flow. Electrons arriving at the pinch-off point are swept across the depleted gap by the strong field. The extra V<sub>DS</sub> drops mostly across the gap, which is why I<sub>D</sub> becomes nearly independent of V<sub>DS</sub>.</div></details>
+    <details class="q"><summary>Why can a MOS device be "on" while carrying no current?</summary>
+      <div class="ans">With V<sub>DS</sub> = 0 the channel exists (V<sub>GS</sub> &gt; V<sub>TH</sub>) and is uniform, but there is no lateral field, so I<sub>D</sub> = 0. Select the "V<sub>DS</sub> = 0" scenario.</div></details>
+  </div>
+</div>
+<nav class="pager" aria-label="Module navigation"><a href="#threshold">&larr; 2 Threshold</a><a href="#gm">4 Transconductance &rarr;</a></nav>
+</section>
+
+<!-- ================= MODULE 4: TRANSCONDUCTANCE ================= -->
+<section class="module" id="gm" data-title="4 Transconductance">
+  <span class="tag">Module 4</span>
+  <h2>Transconductance: how strongly the gate controls the current</h2>
+  <p class="lead">A small wiggle on V<sub>GS</sub> produces a wiggle in I<sub>D</sub>. The ratio is g<sub>m</sub>, the slope of the I<sub>D</sub>-V<sub>GS</sub> curve at the bias point. It is the number that turns a transistor into an amplifier.</p>
+
+  <div class="cols one">
+<div class="card">
+    <h3>Try a bias</h3>
+    <div class="presets" id="g-presets">
+      <button class="preset" data-p="eff">Efficient (small V<sub>ov</sub>)</button>
+      <button class="preset" data-p="fast">Fast (large V<sub>ov</sub>)</button>
+      <button class="preset" data-p="wide">Wide device (W/L = 80)</button>
+      <button class="preset" data-p="tri">Push into triode</button>
+      <button class="preset" data-p="reset">Reset</button>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label for="g-vov">Overdrive V<sub>ov</sub> = V<sub>GS</sub> &minus; V<sub>TH</sub><output id="o-g-vov"></output></label><input id="g-vov" type="range" min="0.05" max="0.8" step="0.01"></div>
+      <div class="ctl"><label for="g-wl">W/L<output id="o-g-wl"></output></label><input id="g-wl" type="range" min="1" max="100" step="1"></div>
+      <div class="ctl"><label for="g-kp">&mu;<sub>n</sub>C<sub>ox</sub><output id="o-g-kp"></output></label><input id="g-kp" type="range" min="50" max="400" step="10"></div>
+      <div class="ctl"><label for="g-vds">V<sub>DS</sub> (used by the third plot)<output id="o-g-vds"></output></label><input id="g-vds" type="range" min="0" max="1.8" step="0.01"></div>
+    </div>
+    <p class="note">V<sub>TH</sub> is fixed at 0.4 V and &lambda; = 0 here, so V<sub>GS</sub> = 0.4 V + V<sub>ov</sub>. The first two plots assume saturation.</p>
+  </div>
+
+
+  <div class="card">
+    <h3>What g<sub>m</sub> is, and where it comes from</h3>
+    <p style="margin-top:0">The gate does not push current through the device. It sets <b>how much mobile charge</b> sits in the channel; the drain-source voltage sets <b>how fast</b> that charge moves. Current is the product, \(I_D = Q_d\,v\). If you nudge the gate by \(\Delta V_{GS}\), the channel charge changes by the oxide capacitor law, and the current follows. The ratio of the two nudges is g<sub>m</sub>:</p>
+    \[ g_m=\frac{\Delta I_D}{\Delta V_{GS}}\bigg|_{V_{DS}\ \text{fixed}} \]
+    <div class="seg" id="g-mode" role="group" aria-label="Operating region for the picture">
+      <button data-m="tri" aria-pressed="true">Triode (V<sub>DS</sub> = 0.1 V)</button>
+      <button data-m="sat" aria-pressed="false">Saturation</button>
+    </div>
+    <canvas id="cv-gm0" width="760" height="330" aria-label="Channel charge and carrier speed before and after a gate step"></canvas>
+    <div class="controls" style="margin-top:8px">
+      <div class="ctl"><label for="g-dv2">Gate step &Delta;V<sub>GS</sub><output id="o-g-dv2"></output></label><input id="g-dv2" type="range" min="-0.3" max="0.3" step="0.01"></div>
+    </div>
+    <div class="readouts" style="margin-top:8px">
+      <div><span class="k">Charge change &Delta;Q<sub>d</sub> = WC<sub>ox</sub>&Delta;V<sub>GS</sub>, relative</span><span class="v" id="g0-q"></span></div>
+      <div><span class="k">Carrier speed change</span><span class="v" id="g0-v"></span></div>
+      <div><span class="k">&Delta;I<sub>D</sub> / &Delta;V<sub>GS</sub> from the picture</span><span class="v" id="g0-gm"></span></div>
+      <div><span class="k">g<sub>m</sub> from the formula</span><span class="v" id="g0-f"></span></div>
+    </div>
+    <p class="caption" id="g0-txt"></p>
+    <details open><summary>The derivation in three lines</summary><div>
+      <ol class="steps">
+        <li>The oxide is a capacitor, so \(Q_d = WC_{ox}(V_{GS}-V_{TH})\) per unit length of channel. Raise V<sub>GS</sub> by \(\Delta V\) and the charge rises by \(WC_{ox}\Delta V\). This is the "transfer" part of transconductance: a voltage controls a charge.</li>
+        <li><b>Triode.</b> The speed is \(v=\mu E=\mu V_{DS}/L\), independent of V<sub>GS</sub>. So \(I_D = WC_{ox}V_{ov}\cdot\mu V_{DS}/L\) and
+        \[ g_m=\frac{\partial I_D}{\partial V_{GS}}=\mu_nC_{ox}\frac{W}{L}V_{DS}. \]</li>
+        <li><b>Saturation.</b> The voltage dropped over the channel is pinned at \(V_{DS,sat}=V_{ov}\), so the field also grows with V<sub>ov</sub>: more charge <i>and</i> faster carriers. Hence \(I_D=\tfrac12\mu_nC_{ox}\tfrac WL V_{ov}^2\) and
+        \[ g_m=\mu_nC_{ox}\frac{W}{L}V_{ov}. \]</li>
+      </ol>
+      Units: current per volt, siemens (S). A 1 mS transconductance means 1 mA more drain current per extra volt on the gate. In a circuit, \(g_m v_{gs}\) is the small-signal current source of the model.</div></details>
+  </div>
+</div>
+  <div class="cols one">
+<div class="card">
+    <h3>g<sub>m</sub> is a slope</h3>
+    <canvas id="cv-gm1" width="760" height="340" aria-label="Drain current versus gate-source voltage with tangent line at the bias point"></canvas>
+    <p class="caption">Blue: I<sub>D</sub> = &frac12;&mu;<sub>n</sub>C<sub>ox</sub>(W/L)(V<sub>GS</sub> &minus; V<sub>TH</sub>)&sup2;. Dashed orange: the tangent at your bias point; its slope is g<sub>m</sub>. The tangent is only a local picture, so use the test below to see how far a real step departs from it.</p>
+    <div class="controls" style="margin-top:8px">
+      <div class="ctl"><label for="g-dv">Test step &Delta;V<sub>GS</sub><output id="o-g-dv"></output></label><input id="g-dv" type="range" min="-0.3" max="0.3" step="0.01"></div>
+    </div>
+    <div class="readouts" style="margin-top:8px">
+      <div><span class="k">Actual &Delta;I<sub>D</sub> (blue)</span><span class="v" id="g-dact"></span></div>
+      <div><span class="k">Predicted g<sub>m</sub>&middot;&Delta;V<sub>GS</sub> (orange)</span><span class="v" id="g-dpred"></span></div>
+      <div><span class="k">Linearisation error</span><span class="v" id="g-derr"></span></div>
+    </div>
+    <p class="caption">Small steps: the two agree, which is what "small-signal" means. Large steps: the curve bends away from its tangent and the amplifier becomes nonlinear.</p>
+  </div>
+
+  <div class="card">
+    <h3>Three faces of g<sub>m</sub></h3>
+    <div class="readouts">
+      <div><span class="k">V<sub>GS</sub></span><span class="v" id="g-vgs"></span></div>
+      <div><span class="k">I<sub>D</sub> (saturation)</span><span class="v" id="g-id"></span></div>
+      <div><span class="k">&mu;<sub>n</sub>C<sub>ox</sub>(W/L)&middot;V<sub>ov</sub></span><span class="v" id="g-a"></span></div>
+      <div><span class="k">&radic;(2&mu;<sub>n</sub>C<sub>ox</sub>(W/L)&middot;I<sub>D</sub>)</span><span class="v" id="g-b"></span></div>
+      <div><span class="k">2I<sub>D</sub> / V<sub>ov</sub></span><span class="v" id="g-c"></span></div>
+      <div><span class="k">Efficiency g<sub>m</sub>/I<sub>D</sub> = 2/V<sub>ov</sub></span><span class="v" id="g-eff"></span></div>
+    </div>
+    <p class="caption">All three are the same number. Which one you use depends on what you hold fixed: V<sub>ov</sub> and W/L (first), I<sub>D</sub> and W/L (second), or I<sub>D</sub> and V<sub>ov</sub> (third). Change any slider and watch them move together.</p>
+  </div>
+
+  <div class="card">
+    <h3>The trade-off: efficiency against speed</h3>
+    <canvas id="cv-gm2" width="760" height="320" aria-label="Transconductance and gm over ID versus overdrive voltage"></canvas>
+    <p class="caption">At a fixed current, shrinking V<sub>ov</sub> (by widening the device) buys more g<sub>m</sub> per amp, but the device gets big and its capacitances slow it down. Large V<sub>ov</sub> gives a compact, fast device that wastes current. That tension shows up in every analog design.</p>
+  </div>
+</div>
+
+  <div class="cols one">
+<div class="card">
+    <h3>g<sub>m</sub> in triode, and its link to R<sub>on</sub></h3>
+    <p style="margin:0 0 10px"><span id="g-region" class="badge" aria-live="polite">-</span></p>
+    <canvas id="cv-gm3" width="760" height="300" aria-label="Transconductance versus drain-source voltage"></canvas>
+    <p class="caption">In triode g<sub>m</sub> = &mu;<sub>n</sub>C<sub>ox</sub>(W/L)V<sub>DS</sub> grows with V<sub>DS</sub>; it flattens at \(\mu_nC_{ox}\tfrac{W}{L}V_{ov}\) once the device saturates. Move the V<sub>DS</sub> slider to slide the dot along the curve.</p>
+    <div class="readouts">
+      <div><span class="k">g<sub>m</sub> at this V<sub>DS</sub></span><span class="v" id="g-gmnow"></span></div>
+      <div><span class="k">R<sub>on</sub> = 1/(&mu;<sub>n</sub>C<sub>ox</sub>(W/L)V<sub>ov</sub>)</span><span class="v" id="g-ron"></span></div>
+    </div>
+    <p class="caption">Compare with the saturation value above: \(g_m = 1/R_{on}\). The same product \(\mu_nC_{ox}\tfrac{W}{L}V_{ov}\) is both the gate-controlled conductance of the deep-triode resistor and the transconductance of the saturated amplifier.</p>
+  </div>
+
+
+  <div class="card">
+    <h3>g<sub>mb</sub>: the body is a second gate</h3>
+    <p style="margin-top:0">The body voltage also moves the channel charge, because it changes the depletion charge under the gate and therefore V<sub>TH</sub>. For a small step on the body, \(g_{mb}=\partial I_D/\partial V_{BS}\). Chain rule through V<sub>TH</sub>:
+    \[ g_{mb}=-\frac{\partial I_D}{\partial V_{TH}}\frac{\partial V_{TH}}{\partial V_{BS}}=g_m\,\eta,\qquad \eta=\frac{\partial V_{TH}}{\partial V_{SB}}=\frac{\gamma}{2\sqrt{2\Phi_F+V_{SB}}} \]
+    A body voltage is typically 5 to 30 % as effective as the gate. The full small-signal model has two controlled sources and the output resistance:</p>
+    <div class="ssm">
+      <svg viewBox="0 0 340 230" role="img" aria-label="Small-signal model: gm times vgs, gmb times vbs and ro in parallel between drain and source">
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M60 40 H280 M60 190 H280 M280 40 V12 M280 190 V218"/>
+          <path d="M100 40 V78 M100 152 V190"/><circle cx="100" cy="115" r="37"/><path d="M100 90 V112 M92 104 L100 114 L108 104"/>
+          <path d="M180 40 V78 M180 152 V190"/><circle cx="180" cy="115" r="37"/><path d="M180 90 V112 M172 104 L180 114 L188 104"/>
+          <path d="M250 40 V80 L242 85 L258 95 L242 105 L258 115 L242 125 L258 135 L242 145 L250 150 V190"/>
+        </g>
+        <g font-size="13" font-weight="600">
+          <text x="288" y="16">D</text><text x="288" y="226">S</text>
+          <text x="100" y="136" text-anchor="middle" font-size="12">g<tspan font-size="9" dy="3">m</tspan><tspan dy="-3">v</tspan><tspan font-size="9" dy="3">gs</tspan></text>
+          <text x="180" y="136" text-anchor="middle" font-size="12">g<tspan font-size="9" dy="3">mb</tspan><tspan dy="-3">v</tspan><tspan font-size="9" dy="3">bs</tspan></text>
+          <text x="264" y="118">r<tspan font-size="9" dy="3">o</tspan></text>
+        </g>
+      </svg>
+      <p class="note">Left to right: g<sub>m</sub>v<sub>gs</sub> (gate drive), g<sub>mb</sub>v<sub>bs</sub> (body drive), r<sub>o</sub> (channel-length modulation). Current flows from the drain down to the source, as in the common-source amplifier where these models are normally used.</p>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label for="gb-vsb">V<sub>SB</sub><output id="o-gb-vsb"></output></label><input id="gb-vsb" type="range" min="0" max="3" step="0.05"></div>
+      <div class="ctl"><label for="gb-gam">&gamma;<output id="o-gb-gam"></output></label><input id="gb-gam" type="range" min="0.1" max="0.8" step="0.01"></div>
+    </div>
+    <canvas id="cv-gmb" width="760" height="260" aria-label="Body-effect coefficient eta versus source-body voltage" style="margin-top:8px"></canvas>
+    <div class="readouts" style="margin-top:8px">
+      <div><span class="k">&eta; at this V<sub>SB</sub></span><span class="v" id="gb-eta"></span></div>
+      <div><span class="k">g<sub>m</sub> (from the bias above)</span><span class="v" id="gb-gm"></span></div>
+      <div><span class="k">g<sub>mb</sub> = &eta; g<sub>m</sub></span><span class="v" id="gb-gmb"></span></div>
+      <div><span class="k">Total drive g<sub>m</sub> + g<sub>mb</sub> (if v<sub>bs</sub> = v<sub>gs</sub>)</span><span class="v" id="gb-tot"></span></div>
+    </div>
+    <p class="caption">Two things to note. &eta; falls as V<sub>SB</sub> grows, because the depletion region is already wide. And when the source sits at the body potential (as in an NMOS with bulk tied to source), v<sub>bs</sub> = 0 and g<sub>mb</sub> drops out. In a source follower the source moves, so v<sub>bs</sub> = &minus;v<sub>out</sub> and g<sub>mb</sub> costs gain (module 5).</p>
+  </div>
+</div>
+  <div class="cols">
+<div class="card">
+    <h3>Where the formulas come from</h3>
+    <details open>
+      <summary>Differentiate the square law</summary>
+      <div>\[ g_m=\frac{\partial I_D}{\partial V_{GS}}=\mu_nC_{ox}\frac{W}{L}(V_{GS}-V_{TH}) \]
+      Substituting \(V_{ov}=\sqrt{2I_D/(\mu_nC_{ox}W/L)}\) or \(\mu_nC_{ox}\tfrac WL=2I_D/V_{ov}^2\) gives the other two forms:
+      \[ g_m=\sqrt{2\mu_nC_{ox}\tfrac WL\,I_D}=\frac{2I_D}{V_{ov}}. \]</div>
+    </details>
+    <details>
+      <summary>What each form is good for</summary>
+      <div><ul>
+        <li><b>g<sub>m</sub> &prop; V<sub>ov</sub></b>: for a fixed device, more gate drive gives more gain, but the current rises as V<sub>ov</sub>&sup2;.</li>
+        <li><b>g<sub>m</sub> &prop; &radic;I<sub>D</sub></b>: at fixed size, quadrupling the current only doubles g<sub>m</sub>. Spending current has diminishing returns.</li>
+        <li><b>g<sub>m</sub> = 2I<sub>D</sub>/V<sub>ov</sub></b>: the efficiency form. At fixed current, g<sub>m</sub> rises as V<sub>ov</sub> falls, which means making the device wider.</li>
+      </ul></div>
+    </details>
+    <details>
+      <summary>PMOS</summary>
+      <div>Replace \(\mu_n\) by \(\mu_p\) and use magnitudes: \(g_m=\mu_pC_{ox}\tfrac WL|V_{GS}-V_{TH}|\). Hole mobility is roughly 2 to 3 times lower, so a PMOS needs about 2 to 3 times the W/L of an NMOS for the same g<sub>m</sub>.</div>
+    </details>
+    <details>
+      <summary>What this model leaves out</summary>
+      <div>Channel-length modulation adds a factor \((1+\lambda V_{DS})\) (next module), and at high overdrive velocity saturation makes g<sub>m</sub> grow more slowly than the square law predicts.</div>
+    </details>
+  </div>
+
+  <div class="card">
+    <h3>Check yourself</h3>
+    <details class="q"><summary>Same V<sub>ov</sub>, W/L doubled. What happens to g<sub>m</sub> and to I<sub>D</sub>?</summary><div class="ans">Both double, since both are proportional to W/L at fixed V<sub>ov</sub>. Compare with the next question.</div></details>
+    <details class="q"><summary>You must keep I<sub>D</sub> fixed and double W/L. What happens to g<sub>m</sub>?</summary><div class="ans">g<sub>m</sub> = &radic;(2&mu;C<sub>ox</sub>(W/L)I<sub>D</sub>) rises by &radic;2 &approx; 1.41, and V<sub>ov</sub> falls by the same factor, since 2I<sub>D</sub>/V<sub>ov</sub> must rise.</div></details>
+    <details class="q"><summary>At I<sub>D</sub> = 1 mA, which is more efficient: V<sub>ov</sub> = 0.2 V or 0.5 V?</summary><div class="ans">0.2 V: g<sub>m</sub> = 2I<sub>D</sub>/V<sub>ov</sub> = 10 mS against 4 mS. The price is a (0.5/0.2)&sup2; &approx; 6 times larger W/L at the same current, since I<sub>D</sub> &prop; (W/L)V<sub>ov</sub>&sup2;.</div></details>
+    <details class="q"><summary>Why does g<sub>m</sub> stop growing with V<sub>DS</sub> after the knee?</summary><div class="ans">Past V<sub>DS</sub> = V<sub>ov</sub> the channel is pinched off, the gate-to-source drive sets the current, and V<sub>DS</sub> no longer matters in the square-law model.</div></details>
+  </div>
+</div>
+<nav class="pager" aria-label="Module navigation"><a href="#iv">&larr; 3 I-V</a><a href="#second">5 Second-order &rarr;</a></nav>
+</section>
+
+<!-- ================= MODULE 5: SECOND-ORDER EFFECTS ================= -->
+<section class="module" id="second" data-title="5 Second-order effects">
+  <span class="tag">Module 5</span>
+  <h2>Second-order effects: what the simple square law misses</h2>
+  <p class="lead">Three corrections matter in nearly every real circuit: the body effect (V<sub>TH</sub> moves), channel-length modulation (the current is not flat in saturation) and subthreshold conduction (the current does not stop at V<sub>TH</sub>).</p>
+
+  <div class="cols one">
+<div class="card">
+    <h3>1. Body effect</h3>
+    <p class="lead" style="margin-top:0">If the source is above the body, the depletion region widens, more fixed charge must be supported, and V<sub>TH</sub> goes up. The body acts as a second, weaker gate.</p>
+    <div class="presets" id="b-presets">
+      <button class="preset" data-p="ex">Lecture-style values (V<sub>TH0</sub> = 0.3 V, &gamma; = 0.4 V<sup>&frac12;</sup>)</button>
+      <button class="preset" data-p="big">Large V<sub>SB</sub> and &gamma;</button>
+      <button class="preset" data-p="none">No body effect (V<sub>SB</sub> = 0)</button>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label for="b-vsb">V<sub>SB</sub><output id="o-b-vsb"></output></label><input id="b-vsb" type="range" min="0" max="3" step="0.05"></div>
+      <div class="ctl"><label for="b-vth0">V<sub>TH0</sub><output id="o-b-vth0"></output></label><input id="b-vth0" type="range" min="0.2" max="0.6" step="0.01"></div>
+      <div class="ctl"><label for="b-gam">&gamma;<output id="o-b-gam"></output></label><input id="b-gam" type="range" min="0.1" max="0.8" step="0.01"></div>
+      <div class="ctl"><label for="b-pf">2&Phi;<sub>F</sub><output id="o-b-pf"></output></label><input id="b-pf" type="range" min="0.6" max="0.9" step="0.01"></div>
+      <div class="ctl"><label for="b-vgs">V<sub>GS</sub> (for the picture)<output id="o-b-vgs"></output></label><input id="b-vgs" type="range" min="0.3" max="1.5" step="0.01"></div>
+    </div>
+    <canvas id="cv-body-xs" width="760" height="340" aria-label="MOSFET cross-section showing depletion depth and inversion layer thickness change with source-body voltage" style="margin-top:10px"></canvas>
+    <p class="caption">Solid colours: your V<sub>SB</sub>. Dashed outlines: the same device at V<sub>SB</sub> = 0. Raising V<sub>SB</sub> widens the depletion region (grey, more fixed charge under the gate) and, at the same V<sub>GS</sub>, leaves less overdrive for the inversion layer (cyan), so the channel thins and the current drops.</p>
+    <canvas id="cv-body1" width="760" height="300" aria-label="Threshold voltage versus source-body voltage" style="margin-top:10px"></canvas>
+    <div class="readouts" style="margin-top:10px">
+      <div><span class="k">V<sub>TH</sub></span><span class="v" id="b-vth"></span></div>
+      <div><span class="k">Shift from V<sub>TH0</sub></span><span class="v" id="b-dvth"></span></div>
+      <div><span class="k">&eta; = &gamma; / (2&radic;(2&Phi;<sub>F</sub> + V<sub>SB</sub>))</span><span class="v" id="b-eta"></span></div>
+      <div><span class="k">g<sub>mb</sub> = &eta; g<sub>m</sub></span><span class="v" id="b-gmb"></span></div>
+    </div>
+    <p class="caption">V<sub>TH</sub> grows like a square root, so the first volt of V<sub>SB</sub> hurts the most. Because the body voltage also controls the channel, a small-signal model needs a second current source g<sub>mb</sub>V<sub>BS</sub>, with \(g_{mb}=\partial I_D/\partial V_{BS}=\eta\,g_m\).</p>
+  </div>
+
+  <div class="card">
+    <h3>Where it bites: the source follower</h3>
+    <p class="lead" style="margin-top:0">A source follower copies the gate voltage to the source, minus V<sub>GS</sub>. But the source is not at the body potential, so V<sub>SB</sub> = V<sub>out</sub> and V<sub>TH</sub> rises as the output rises. Here the bias current sets V<sub>ov</sub> = 0.2 V.</p>
+    <div class="controls"><div class="ctl"><label for="b-vin">V<sub>in</sub><output id="o-b-vin"></output></label><input id="b-vin" type="range" min="0" max="3" step="0.01"></div></div>
+    <canvas id="cv-body2" width="760" height="340" aria-label="Source follower output versus input with and without body effect" style="margin-top:10px"></canvas>
+    <div class="readouts" style="margin-top:10px">
+      <div><span class="k">V<sub>out</sub> with body effect</span><span class="v" id="b-vout"></span></div>
+      <div><span class="k">V<sub>in</sub> &minus; V<sub>out</sub></span><span class="v" id="b-vsf"></span></div>
+      <div><span class="k">Small-signal gain 1/(1 + &eta;)</span><span class="v" id="b-gain"></span></div>
+    </div>
+    <p class="caption">Without the body effect the gain is exactly 1 (grey). With it the gain is below 1 and the level shift grows with V<sub>out</sub> (blue). Tying the source to the body, possible in an n-well PMOS follower, removes the effect.</p>
+  </div>
+</div>
+
+  <div class="cols">
+<div class="card">
+    <h3>2. Channel-length modulation</h3>
+    <p class="lead" style="margin-top:0">At pinch-off the inversion layer ends a little before the drain, so the effective length is L&prime; = L &minus; &Delta;L. The gap grows with V<sub>DS</sub>, which tilts the saturation curve: \(I_D=\tfrac12\mu_nC_{ox}\tfrac WL V_{ov}^2(1+\lambda V_{DS})\). Here W and the overdrive are fixed and only L changes.</p>
+    <div class="controls">
+      <div class="ctl"><label for="c-vov">V<sub>ov</sub><output id="o-c-vov"></output></label><input id="c-vov" type="range" min="0.1" max="0.8" step="0.01"></div>
+      <div class="ctl"><label for="c-lm">Gate length L (multiple of the reference)<output id="o-c-lm"></output></label><input id="c-lm" type="range" min="0.5" max="4" step="0.05"></div>
+      <div class="ctl"><label for="c-lamin">&lambda; of the 1&times; device<output id="o-c-lam"></output></label><input id="c-lamin" type="range" min="0.02" max="0.3" step="0.01"></div>
+      <div class="ctl"><label for="c-vds">V<sub>DS</sub> (for the picture)<output id="o-c-vds"></output></label><input id="c-vds" type="range" min="0.05" max="2.5" step="0.01"></div>
+    </div>
+    <canvas id="cv-clm-xs" width="760" height="300" aria-label="Channel with pinch-off point moving toward the source as the drain voltage grows" style="margin-top:10px"></canvas>
+    <p class="caption">The drawn channel length follows the L slider. Past pinch-off the inversion layer stops at the dashed marker; the remaining depleted gap &Delta;L grows with V<sub>DS</sub>, leaving the shorter effective length L&prime; (here 1/L&prime; = (1 + &lambda;V<sub>DS</sub>)/L). A shorter L&prime; means more current.</p>
+    <canvas id="cv-clm" width="760" height="340" aria-label="Drain current versus drain-source voltage with extrapolation to the Early voltage" style="margin-top:10px"></canvas>
+    <div class="readouts" style="margin-top:10px">
+      <div><span class="k">&lambda; &prop; 1/L</span><span class="v" id="c-lam"></span></div>
+      <div><span class="k">Early voltage V<sub>A</sub> = 1/&lambda;</span><span class="v" id="c-va"></span></div>
+      <div><span class="k">I<sub>D</sub> at V<sub>DS</sub> = 0 (extrapolated)</span><span class="v" id="c-id"></span></div>
+      <div><span class="k">g<sub>m</sub></span><span class="v" id="c-gm"></span></div>
+      <div><span class="k">r<sub>o</sub> = 1/(&lambda; I<sub>D</sub>)</span><span class="v" id="c-ro"></span></div>
+      <div><span class="k">Intrinsic gain g<sub>m</sub>r<sub>o</sub> = 2/(&lambda;V<sub>ov</sub>)</span><span class="v" id="c-gmro"></span></div>
+      <div><span class="k">Slope of the curve vs the 1&times; device</span><span class="v" id="c-slope"></span></div>
+    </div>
+    <p class="caption">Double L: &lambda; halves and the current halves, so the slope falls to a quarter and r<sub>o</sub> quadruples. Intrinsic gain g<sub>m</sub>r<sub>o</sub> only doubles because g<sub>m</sub> also halves. This is why analog designers use long channels for current sources and amplifiers.</p>
+  </div>
+
+  <div class="card">
+    <h3>3. Subthreshold conduction</h3>
+    <p class="lead" style="margin-top:0">Below V<sub>TH</sub> the surface is weakly inverted, not empty. Diffusion current flows and grows exponentially with V<sub>GS</sub>: \(I_D\approx I_0\exp\frac{V_{GS}}{\xi V_T}\), with \(V_T=kT/q\) and \(\xi>1\) (typically about 1.5). On a log scale this is a straight line.</p>
+    <div class="controls">
+      <div class="ctl"><label for="u-vth">V<sub>TH</sub><output id="o-u-vth"></output></label><input id="u-vth" type="range" min="0.2" max="0.6" step="0.01"></div>
+      <div class="ctl"><label for="u-xi">&xi; (non-ideality)<output id="o-u-xi"></output></label><input id="u-xi" type="range" min="1" max="2" step="0.05"></div>
+      <div class="ctl"><label for="u-wl">W/L<output id="o-u-wl"></output></label><input id="u-wl" type="range" min="1" max="100" step="1"></div>
+      <div class="ctl"><label for="u-vgs">V<sub>GS</sub> (operating point)<output id="o-u-vgs"></output></label><input id="u-vgs" type="range" min="0" max="1.2" step="0.01"></div>
+    </div>
+    <canvas id="cv-sub-xs" width="760" height="360" aria-label="Weak inversion: electrons thermally climbing over the source-channel barrier" style="margin-top:10px"></canvas>
+    <p class="caption">Top: the channel region. Bottom: the energy an electron needs to get from the source to the channel. Raising V<sub>GS</sub> lowers the barrier; only the few electrons in the high-energy tail of the source's thermal distribution make it over, and the fraction goes as exp(&minus;barrier/V<sub>T</sub>). That is why the current is exponential in V<sub>GS</sub>.</p>
+    <canvas id="cv-sub" width="760" height="340" aria-label="Drain current on a log scale versus gate voltage showing weak and strong inversion" style="margin-top:10px"></canvas>
+    <div class="readouts" style="margin-top:10px">
+      <div><span class="k">Subthreshold swing &xi; V<sub>T</sub> ln 10</span><span class="v" id="u-swing"></span></div>
+      <div><span class="k">I<sub>D</sub> at the operating point</span><span class="v" id="u-id"></span></div>
+      <div><span class="k">Regime</span><span class="v" id="u-region" style="font-size:15px"></span></div>
+      <div><span class="k">Square law and exponential meet</span><span class="v" id="u-v0"></span></div>
+      <div><span class="k">I<sub>D</sub> at V<sub>GS</sub> = 0 (leakage)</span><span class="v" id="u-ioff"></span></div>
+      <div><span class="k">I<sub>on</sub>/I<sub>off</sub> (1 V vs 0 V)</span><span class="v" id="u-onoff"></span></div>
+    </div>
+    <p class="caption">The swing is the V<sub>GS</sub> needed for one decade of current: about 60 mV at the ideal &xi; = 1, and 90 mV at &xi; = 1.5. The plotted current is the lower of the two models, joined where their values and slopes agree (V<sub>ov</sub> = 2&xi;V<sub>T</sub>). Lower V<sub>TH</sub> makes a device faster but raises the off-state current exponentially, since every 90 mV costs a decade.</p>
+  </div>
+</div>
+
+  <div class="cols">
+<div class="card">
+    <h3>Other limits worth knowing</h3>
+    <details><summary>Velocity saturation</summary><div>At high lateral field carriers stop speeding up (v approaches about 10<sup>7</sup> cm/s in silicon). The current becomes roughly linear in V<sub>ov</sub> instead of quadratic, and g<sub>m</sub> flattens. Short devices at high overdrive are the usual victims.</div></details>
+    <details><summary>Gate-oxide breakdown</summary><div>A thin oxide (a nanometre or so) tolerates only a limited field. Too much V<sub>GS</sub> destroys it permanently, so supply voltages shrink with the oxide.</div></details>
+    <details><summary>Punchthrough</summary><div>With a short channel and large V<sub>DS</sub>, the drain depletion region reaches the source. The gate loses control and the current rises sharply.</div></details>
+  </div>
+
+  <div class="card">
+    <h3>Check yourself</h3>
+    <details class="q"><summary>Why does V<sub>TH</sub> rise when V<sub>SB</sub> increases?</summary><div class="ans">The source-to-body reverse bias widens the depletion region, so the gate must support more fixed charge before an inversion layer forms.</div></details>
+    <details class="q"><summary>V<sub>TH0</sub> = 0.3 V, &gamma; = 0.4 V<sup>&frac12;</sup>, 2&Phi;<sub>F</sub> = 0.7 V, V<sub>SB</sub> = 1 V. What is V<sub>TH</sub>?</summary><div class="ans">0.3 + 0.4(&radic;1.7 &minus; &radic;0.7) = 0.3 + 0.4(1.304 &minus; 0.837) &approx; 0.487 V. Use the lecture-style preset to check.</div></details>
+    <details class="q"><summary>L doubles at fixed W and V<sub>ov</sub>. What happens to r<sub>o</sub> and to g<sub>m</sub>r<sub>o</sub>?</summary><div class="ans">r<sub>o</sub> = 1/(&lambda;I<sub>D</sub>) rises by 4 (since &lambda; and I<sub>D</sub> both halve). g<sub>m</sub>r<sub>o</sub> = 2/(&lambda;V<sub>ov</sub>) rises by 2.</div></details>
+    <details class="q"><summary>Does a device with V<sub>GS</sub> = 0 and V<sub>TH</sub> = 0.4 V carry zero current?</summary><div class="ans">No. Subthreshold leakage flows, falling by one decade for every 80 to 100 mV below V<sub>TH</sub>. Millions of "off" gates add up in a chip.</div></details>
+  </div>
+</div>
+<nav class="pager" aria-label="Module navigation"><a href="#gm">&larr; 4 Transconductance</a><a href="#caps">6 Capacitances &rarr;</a></nav>
+</section>
+
+<!-- ================= MODULE 6: CAPACITANCES ================= -->
+<section class="module" id="caps" data-title="6 Capacitances">
+  <span class="tag">Module 6</span>
+  <h2>Device capacitances: what limits the speed</h2>
+  <p class="lead">Every MOSFET carries six parasitic capacitors. Which ones matter, and how large they are, depends on the operating region. Click a badge on the drawing to see where each one lives.</p>
+
+
+  <div class="cols one">
+<div class="card">
+    <h3>The capacitance model of a MOSFET</h3>
+    <p style="margin-top:0">Besides the controlled current source, a small-signal model has five capacitors: three on the gate (C<sub>GS</sub>, C<sub>GD</sub>, C<sub>GB</sub>) and two junction capacitors to the body (C<sub>SB</sub>, C<sub>DB</sub>). The values change with the bias: set it here and watch the symbols resize.</p>
+    <div class="presets" id="k-presets">
+      <button class="preset" data-p="off">Off</button>
+      <button class="preset" data-p="sat">Saturation</button>
+      <button class="preset" data-p="tri">Deep triode</button>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label for="k-vgs">V<sub>GS</sub><output id="o-k-vgs"></output></label><input id="k-vgs" type="range" min="0" max="1.8" step="0.01"></div>
+      <div class="ctl"><label for="k-vd">Drain voltage V<sub>D</sub> (source and body at 0 V)<output id="o-k-vd"></output></label><input id="k-vd" type="range" min="0" max="1.8" step="0.01"></div>
+    </div>
+    <canvas id="cv-cap-sch" width="760" height="420" aria-label="MOSFET symbol with the five parasitic capacitors between its terminals" style="margin-top:10px"></canvas>
+    <p style="margin:10px 0 0"><span id="k-region" class="badge" aria-live="polite">-</span></p>
+    <p class="caption">Plate size follows the capacitance. In saturation C<sub>GS</sub> dominates and C<sub>GD</sub> is only the overlap; in deep triode they are equal; when the device is off C<sub>GB</sub> appears and both others shrink to the overlap. C<sub>SB</sub> is at V<sub>R</sub> = 0 V (source at the body) and C<sub>DB</sub> at V<sub>R</sub> = V<sub>D</sub>.</p>
+  </div>
+
+  <div class="card">
+    <div class="seg" id="cap-chips" role="group" aria-label="Capacitance to highlight">
+      <button data-c="c1" aria-pressed="true">C1</button><button data-c="c2" aria-pressed="false">C2</button><button data-c="c3" aria-pressed="false">C3</button><button data-c="c4" aria-pressed="false">C4</button><button data-c="c5" aria-pressed="false">C5</button><button data-c="c6" aria-pressed="false">C6</button>
+    </div>
+    <canvas id="cv-cap-xs" class="pick" width="760" height="380" aria-label="MOSFET cross-section with the six parasitic capacitances"></canvas>
+    <div class="info" id="cap-info" aria-live="polite"></div>
+  </div>
+</div>
+
+  <div class="cols one">
+<div class="card">
+    <h3>Capacitance versus gate voltage</h3>
+    <p class="note" style="margin:0 0 8px">The bias sliders below are the same ones as in the schematic card.</p>
+    <div class="controls mirror" data-src="k-vgs k-vd" style="margin-bottom:12px"></div>
+
+    <div class="controls">
+      <div class="group-title">Geometry and process</div>
+      <div class="ctl"><label for="k-w">Width W<output id="o-k-w"></output></label><input id="k-w" type="range" min="0.1" max="10" step="0.1"></div>
+      <div class="ctl"><label for="k-l">Gate length L<output id="o-k-l"></output></label><input id="k-l" type="range" min="20" max="200" step="5"></div>
+      <div class="ctl"><label for="k-tox">Oxide thickness t<sub>ox</sub><output id="o-k-tox"></output></label><input id="k-tox" type="range" min="1" max="5" step="0.1"></div>
+      <div class="ctl"><label for="k-covs">Overlap C<sub>ov</sub> per width<output id="o-k-cov"></output></label><input id="k-covs" type="range" min="0.1" max="0.6" step="0.01"></div>
+      <div class="ctl"><label for="k-vth">V<sub>TH</sub><output id="o-k-vth"></output></label><input id="k-vth" type="range" min="0.2" max="0.6" step="0.01"></div>
+    </div>
+    <canvas id="cv-cap-bias" width="760" height="360" aria-label="Gate capacitances versus gate voltage" style="margin-top:10px"></canvas>
+    <p class="caption">Shaded bands: off, saturation (V<sub>TH</sub> &lt; V<sub>GS</sub> &lt; V<sub>D</sub> + V<sub>TH</sub>) and triode. The curves are the idealised textbook values with short smoothed transitions; real devices blend gradually.</p>
+    <div class="readouts" style="margin-top:10px">
+      <div><span class="k">C<sub>GS</sub></span><span class="v" id="k-gs"></span></div>
+      <div><span class="k">C<sub>GD</sub></span><span class="v" id="k-gd"></span></div>
+      <div><span class="k">C<sub>GB</sub></span><span class="v" id="k-gb"></span></div>
+      <div><span class="k">Total seen by the gate</span><span class="v" id="k-sum"></span></div>
+      <div><span class="k">W&middot;L&middot;C<sub>ox</sub></span><span class="v" id="k-wlc"></span></div>
+      <div><span class="k">W&middot;C<sub>ov</sub></span><span class="v" id="k-cw"></span></div>
+      <div><span class="k">C<sub>ox</sub></span><span class="v" id="k-cox"></span></div>
+    </div>
+    <div class="tblwrap" style="margin-top:12px"><table class="tbl">
+      <thead><tr><th>Region</th><th>C<sub>GS</sub></th><th>C<sub>GD</sub></th><th>C<sub>GB</sub></th></tr></thead>
+      <tbody>
+        <tr><td>Off</td><td>W&middot;C<sub>ov</sub></td><td>W&middot;C<sub>ov</sub></td><td>series of WLC<sub>ox</sub> and C<sub>dep</sub></td></tr>
+        <tr><td>Saturation</td><td>&frac23;WLC<sub>ox</sub> + WC<sub>ov</sub></td><td>W&middot;C<sub>ov</sub></td><td>&approx; 0</td></tr>
+        <tr><td>Deep triode</td><td>&frac12;WLC<sub>ox</sub> + WC<sub>ov</sub></td><td>&frac12;WLC<sub>ox</sub> + WC<sub>ov</sub></td><td>&approx; 0</td></tr>
+      </tbody>
+    </table></div>
+    <p class="caption">Why: when the channel exists it shields the substrate from the gate, so C<sub>GB</sub> disappears. In saturation the channel tapers to zero at the drain, so the source end gets two-thirds of the oxide capacitance and the drain end none. In deep triode the channel is uniform and splits the capacitance evenly.</p>
+  </div>
+
+  <div class="card">
+    <h3>Junction capacitances C<sub>SB</sub> and C<sub>DB</sub></h3>
+    <div class="controls">
+      <div class="ctl"><label for="j-vr">Reverse bias V<sub>R</sub><output id="o-j-vr"></output></label><input id="j-vr" type="range" min="0" max="3" step="0.05"></div>
+      <div class="ctl"><label for="j-m">Grading coefficient m<output id="o-j-m"></output></label><input id="j-m" type="range" min="0.3" max="0.5" step="0.01"></div>
+      <div class="ctl"><label for="j-pb">Built-in potential &Phi;<sub>B</sub><output id="o-j-pb"></output></label><input id="j-pb" type="range" min="0.5" max="1" step="0.01"></div>
+      <div class="ctl"><label for="j-e">Diffusion length E<output id="o-j-e"></output></label><input id="j-e" type="range" min="0.1" max="1" step="0.05"></div>
+    </div>
+    <canvas id="cv-cap-junc" width="760" height="300" aria-label="Junction capacitance versus reverse bias" style="margin-top:10px"></canvas>
+    <div class="readouts" style="margin-top:10px">
+      <div><span class="k">Junction area W&middot;E</span><span class="v" id="j-area"></span></div>
+      <div><span class="k">Sidewall perimeter W + 2E</span><span class="v" id="j-per"></span></div>
+      <div><span class="k">C at this V<sub>R</sub></span><span class="v" id="j-c"></span></div>
+      <div><span class="k">C at V<sub>R</sub> = 0</span><span class="v" id="j-c0"></span></div>
+      <div><span class="k">Reduction</span><span class="v" id="j-ratio" style="font-size:15px"></span></div>
+    </div>
+    <p class="caption">\(C_j=\dfrac{C_{j0}}{(1+V_R/\Phi_B)^m}\) per unit area, plus a sidewall term per unit length. Uses W from the card above; area parameters are 1 fF/&micro;m&sup2; and 0.2 fF/&micro;m. More reverse bias pulls the depletion region wider, so the capacitance falls. These capacitors load the output node of every stage.</p>
+  </div>
+</div>
+
+  <div class="cols one">
+<div class="card">
+    <h3>Why C<sub>GD</sub> is special: the Miller effect</h3>
+    <p class="lead" style="margin-top:0">In a common-source stage the drain moves opposite to the gate with gain &minus;A<sub>v</sub>. The voltage across C<sub>GD</sub> is (1 + A<sub>v</sub>) times the input swing, so the input sees C<sub>GD</sub> multiplied by (1 + A<sub>v</sub>).</p>
+    <div class="controls"><div class="ctl"><label for="m-av">Voltage gain magnitude |A<sub>v</sub>|<output id="o-m-av"></output></label><input id="m-av" type="range" min="1" max="20" step="1"></div></div>
+    <div class="readouts" style="margin-top:8px">
+      <div><span class="k">C<sub>GD</sub> (saturation)</span><span class="v" id="m-cgd"></span></div>
+      <div><span class="k">C<sub>GS</sub> + C<sub>GD</sub></span><span class="v" id="m-cin0"></span></div>
+      <div><span class="k">C<sub>GS</sub> + (1 + |A<sub>v</sub>|)C<sub>GD</sub></span><span class="v" id="m-cin"></span></div>
+      <div><span class="k">Increase</span><span class="v" id="m-ratio"></span></div>
+    </div>
+    <p class="caption">A small overlap capacitance can dominate the input capacitance of a high-gain stage. This uses the saturation values from the card above and your W, L, t<sub>ox</sub>.</p>
+  </div>
+
+  <div class="card" id="ignore-card">
+    <h3>Which capacitances can you ignore, and when?</h3>
+    <p style="margin-top:0">Never because they are "small" alone. A capacitor can be dropped when (a) the same AC voltage sits on both of its plates, so no AC current flows, (b) it is in parallel with something much bigger, or (c) its impedance 1/(&omega;C) is far above the resistance it sits next to, which is true at low frequency. Pick a circuit and see what that means for each capacitor.</p>
+    <div class="seg" id="cap-topo" role="group" aria-label="Circuit situation">
+      <button data-t="cs" aria-pressed="true">Common-source amplifier</button>
+      <button data-t="sf" aria-pressed="false">Source follower</button>
+      <button data-t="off" aria-pressed="false">Transistor off (switch)</button>
+      <button data-t="lf" aria-pressed="false">Low frequency / DC</button>
+    </div>
+    <p class="note" id="ign-sit"></p>
+    <div class="tblwrap"><table class="tbl">
+      <thead><tr><th>Capacitor</th><th>Connects</th><th>Verdict</th><th>Why</th></tr></thead>
+      <tbody id="ign-body"></tbody>
+    </table></div>
+    <details><summary>Rules of thumb behind the table</summary><div><ul>
+      <li><b>Both plates at AC ground, or on the same node:</b> no AC voltage across it, so no AC current. A source at AC ground and a grounded body short C<sub>SB</sub> out; a drain on V<sub>DD</sub> and a grounded body short C<sub>DB</sub> out.</li>
+      <li><b>C<sub>GB</sub> in the on state:</b> the inversion layer sits between gate and bulk and shields it, so C<sub>GB</sub> &approx; 0. It only exists when the channel does not, and then the transistor is off anyway.</li>
+      <li><b>Parallel with a much larger capacitor:</b> C<sub>DB</sub> next to a load C<sub>L</sub> &gg; C<sub>DB</sub> disappears into it.</li>
+      <li><b>Frequency:</b> a capacitor matters once 1/(2&pi;fC) falls to the resistance it sits beside. Well below that frequency every capacitor is an open circuit.</li>
+      <li><b>Never ignore C<sub>GD</sub> in a gain stage</b> until you have multiplied it by (1 + A<sub>v</sub>): the Miller effect makes the smallest capacitor the most important one.</li>
+      <li>Short channels: overlap and fringing capacitances can be as large as the channel term, so C<sub>GD</sub> in saturation is not "just a little".</li>
+    </ul></div></details>
+  </div>
+</div>
+
+  <div class="cols">
+<div class="card">
+    <h3>Formulas</h3>
+    <details open><summary>The six capacitances</summary><div>
+      \[ C_1 = WLC_{ox},\quad C_2 = WL\sqrt{\frac{q\epsilon_{si}N_{sub}}{4\Phi_F}},\quad C_3=C_4 = W C_{ov},\quad C_{5,6}=\frac{C_{j0}}{(1+V_R/\Phi_B)^m}\,(\text{area}) + C_{jsw}\,(\text{perimeter}) \]
+      Gate capacitances combine C<sub>1</sub>, C<sub>2</sub> and the overlaps differently in each region, as in the table. C<sub>SB</sub> and C<sub>DB</sub> are the junction terms.</div></details>
+  </div>
+
+  <div class="card">
+    <h3>Check yourself</h3>
+    <details class="q"><summary>Which capacitance is largest between the gate and source in saturation?</summary><div class="ans">The channel term, &frac23;WLC<sub>ox</sub>, unless the overlap is unusually large. Move the overlap slider to check.</div></details>
+    <details class="q"><summary>Why does C<sub>GB</sub> vanish once the transistor turns on?</summary><div class="ans">The inversion layer connects to the source and drain and acts as a shield: the gate's field now terminates on channel electrons, not on the bulk.</div></details>
+    <details class="q"><summary>Why is C<sub>GD</sub> in saturation so small, yet so important?</summary><div class="ans">Only the overlap remains, but the Miller effect multiplies it by (1 + A<sub>v</sub>) at the input of a gain stage.</div></details>
+    <details class="q"><summary>What happens to C<sub>DB</sub> when V<sub>DS</sub> rises?</summary><div class="ans">The drain-body junction is more reverse-biased, so the depletion region widens and C<sub>DB</sub> drops.</div></details>
+  </div>
+</div>
+<nav class="pager" aria-label="Module navigation"><a href="#second">&larr; 5 Second-order</a><a href="#ss">7 Small-signal &rarr;</a></nav>
+</section>
+<!-- ================= MODULE 7: SMALL-SIGNAL MODEL, SPICE, FINFET ================= -->
+<section class="module" id="ss" data-title="7 Small-signal model">
+  <span class="tag">Module 7</span>
+  <h2>The small-signal model and SPICE</h2>
+  <p class="lead">A circuit designer does not solve the square law at every node. First the transistor is biased (DC), then a tiny signal is added on top, and the device is replaced by a linear model built from the derivatives of the I-V curve. This module shows where that model comes from, what each element is, how a DC circuit becomes a small-signal circuit, and how a simulator stores the same device.</p>
+
+  <div class="cols one">
+  <div class="card">
+    <h3>From the I-V curve to a linear model</h3>
+    <p class="lead" style="margin-top:0">Fix the DC bias (the dot on the curve), then wiggle V<sub>GS</sub> by a small sine v<sub>gs</sub>. The drain current wiggles too. For a small enough swing the current follows the straight tangent: i<sub>d</sub> = g<sub>m</sub>v<sub>gs</sub>. For a large swing the curvature shows up as distortion.</p>
+    <div class="controls">
+      <div class="ctl"><label for="w-vov">DC overdrive V<sub>ov</sub> = V<sub>GS</sub> &minus; V<sub>TH</sub><output id="o-w-vov"></output></label><input id="w-vov" type="range" min="0.1" max="0.6" step="0.01"></div>
+      <div class="ctl"><label for="w-amp">Signal amplitude |v<sub>gs</sub>|<output id="o-w-amp"></output></label><input id="w-amp" type="range" min="1" max="300" step="1"></div>
+    </div>
+    <canvas id="cv-ss-wave" width="760" height="340" aria-label="Drain current versus gate voltage with a moving operating point, and the resulting current waveform compared with the linear model" style="margin-top:10px"></canvas>
+    <div class="readouts" style="margin-top:10px">
+      <div><span class="k">Bias current I<sub>D</sub></span><span class="v" id="w-id"></span></div>
+      <div><span class="k">g<sub>m</sub> = k V<sub>ov</sub></span><span class="v" id="w-gm"></span></div>
+      <div><span class="k">Peak i<sub>d</sub> (real)</span><span class="v" id="w-ipk"></span></div>
+      <div><span class="k">Peak g<sub>m</sub>v<sub>gs</sub> (model)</span><span class="v" id="w-lpk"></span></div>
+      <div><span class="k">Second harmonic</span><span class="v" id="w-hd2"></span></div>
+    </div>
+    <p class="caption">Left: the square-law curve (here V<sub>TH</sub> = 0.4 V, k = &micro;<sub>n</sub>C<sub>ox</sub>W/L = 4 mA/V&sup2;), the tangent at the bias point and the moving operating point. Right: the input v<sub>gs</sub>(t), and the real current change (blue) against the linear model (orange, dashed). Expanding the square law exactly gives \(i_d = g_m v_{gs} + \tfrac12 k v_{gs}^2\): the second term is the error, and its size relative to the first is \(v_{gs}/(2V_{ov})\). The second harmonic of the waveform is \(\approx |v_{gs}|/(4V_{ov})\), so &ldquo;small signal&rdquo; means |v<sub>gs</sub>| &#8810; V<sub>ov</sub>.</p>
+  </div>
+
+  <div class="card">
+    <h3>The small-signal model, one level of detail at a time</h3>
+    <p class="lead" style="margin-top:0">The same transistor can be modelled at three levels. Each extra element answers one question: <em>what else does the drain current depend on?</em> Start with the simplest and add detail only when the circuit needs it.</p>
+    <div class="mgrid">
+      <figure>
+        <canvas id="cv-sm-1" width="460" height="320" aria-label="Ideal small-signal model with one voltage-controlled current source"></canvas>
+        <figcaption><b>1. Ideal (no channel-length modulation, no body effect)</b>
+          <span class="eq">i<sub>d</sub> = g<sub>m</sub> v<sub>gs</sub></span>
+          Only the gate moves the current. The output is a perfect current source, so r<sub>out</sub> = &infin;. This is enough for quick hand estimates, but it predicts an infinite gain for an ideal current-source load.</figcaption>
+      </figure>
+      <figure>
+        <canvas id="cv-sm-2" width="460" height="320" aria-label="Small-signal model with output resistance"></canvas>
+        <figcaption><b>2. With channel-length modulation</b>
+          <span class="eq">i<sub>d</sub> = g<sub>m</sub> v<sub>gs</sub> + v<sub>ds</sub>/r<sub>o</sub></span>
+          In saturation the current still rises slowly with V<sub>DS</sub>. A current proportional to the voltage across it is a resistor, r<sub>o</sub> = 1/(&lambda;I<sub>D</sub>) (it assumes &lambda;V<sub>DS</sub> &#8810; 1). It limits the largest gain any stage can reach: g<sub>m</sub>r<sub>o</sub> = 2/(&lambda;V<sub>ov</sub>).</figcaption>
+      </figure>
+      <figure>
+        <canvas id="cv-sm-3" width="460" height="320" aria-label="Small-signal model with output resistance and body transconductance"></canvas>
+        <figcaption><b>3. With the body effect</b>
+          <span class="eq">i<sub>d</sub> = g<sub>m</sub>v<sub>gs</sub> + g<sub>mb</sub>v<sub>bs</sub> + v<sub>ds</sub>/r<sub>o</sub></span>
+          The body is a second gate: g<sub>mb</sub> = &eta;g<sub>m</sub>, with &eta; = &gamma;/(2&radic;(2&Phi;<sub>F</sub> + V<sub>SB</sub>)). It only matters when the source is <em>not</em> at the same small-signal potential as the body (a source follower, a stage with an unbypassed source resistor). If the source is at AC ground, v<sub>bs</sub> = 0 and the element vanishes.</figcaption>
+      </figure>
+    </div>
+    <p class="caption">All three are valid only in saturation, for small signals. The capacitances (C<sub>GS</sub>, C<sub>GD</sub>, C<sub>GB</sub>, C<sub>SB</sub>, C<sub>DB</sub>) are added when frequency matters; the full model is in the card after the next one. The same model applies to PMOS (see below).</p>
+  </div>
+
+  <div class="card" id="steps-card">
+    <h3>From a DC circuit to its small-signal circuit</h3>
+    <p class="lead" style="margin-top:0">This is the recipe used to analyse every amplifier. Step through it for a common-source stage and change the numbers: the model elements follow the bias point.</p>
+    <div class="controls">
+      <div class="ctl"><label for="st-vdd">V<sub>DD</sub><output id="o-st-vdd"></output></label><input id="st-vdd" type="range" min="1" max="3.3" step="0.05"></div>
+      <div class="ctl"><label for="st-rd">R<sub>D</sub><output id="o-st-rd"></output></label><input id="st-rd" type="range" min="1" max="20" step="0.5"></div>
+      <div class="ctl"><label for="st-vg">V<sub>G</sub> (DC gate bias)<output id="o-st-vg"></output></label><input id="st-vg" type="range" min="0.45" max="1.2" step="0.01"></div>
+      <div class="ctl"><label for="st-wl">W/L<output id="o-st-wl"></output></label><input id="st-wl" type="range" min="5" max="100" step="1"></div>
+      <div class="ctl" id="st-lam-ctl"><label for="st-lam">&lambda;<output id="o-st-lam"></output></label><input id="st-lam" type="range" min="0.02" max="0.3" step="0.01"></div>
+      <div class="ctl" id="st-rs-ctl" style="display:none"><label for="st-rs">R<sub>S</sub> (body-effect models)<output id="o-st-rs"></output></label><input id="st-rs" type="range" min="0.2" max="4" step="0.1" value="1"></div>
+    </div>
+    <div class="seg" id="st-clm" role="group" aria-label="Which model" style="margin-top:10px;display:flex;flex-wrap:wrap;border-radius:14px">
+      <button data-m="0" aria-pressed="false">Ideal (no &lambda;, no body effect)</button>
+      <button data-m="1" aria-pressed="true">With channel-length modulation (r<sub>o</sub>)</button>
+      <button data-m="2" aria-pressed="false">With body effect (g<sub>mb</sub>, adds R<sub>S</sub>)</button>
+      <button data-m="3" aria-pressed="false">Both: r<sub>o</sub> and g<sub>mb</sub></button>
+    </div>
+    <div class="seg" id="st-steps" role="group" aria-label="Step" style="display:flex;flex-wrap:wrap;border-radius:14px">
+      <button data-s="1" aria-pressed="true">1 &middot; DC circuit</button>
+      <button data-s="2" aria-pressed="false">2 &middot; Bias point</button>
+      <button data-s="3" aria-pressed="false">3 &middot; Kill the DC sources</button>
+      <button data-s="4" aria-pressed="false">4 &middot; Insert the model</button>
+      <button data-s="5" aria-pressed="false">5 &middot; Redraw and solve</button>
+    </div>
+    <canvas id="cv-ss-steps" width="900" height="400" aria-label="Common-source stage drawn at each step from the DC circuit to the small-signal circuit"></canvas>
+    <div class="info" id="st-text" style="margin-top:10px" aria-live="polite"></div>
+    <div class="readouts" style="margin-top:10px">
+      <div><span class="k">V<sub>GS</sub>, V<sub>ov</sub></span><span class="v" id="st-vov"></span></div>
+      <div><span class="k">I<sub>D</sub></span><span class="v" id="st-id"></span></div>
+      <div><span class="k">V<sub>DS</sub> and region</span><span class="v" id="st-vds"></span></div>
+      <div><span class="k">g<sub>m</sub> = 2I<sub>D</sub>/V<sub>ov</sub></span><span class="v" id="st-gm"></span></div>
+      <div><span class="k">r<sub>o</sub> = 1/(&lambda;I<sub>D</sub>)</span><span class="v" id="st-ro"></span></div>
+      <div><span class="k">g<sub>mb</sub> = &eta;g<sub>m</sub></span><span class="v" id="st-gmb"></span></div>
+      <div><span class="k">Gain v<sub>out</sub>/v<sub>in</sub></span><span class="v" id="st-av"></span></div>
+    </div>
+    <p class="caption">The rules of step 3: a constant voltage source has zero small-signal voltage, so it becomes a <b>short</b> (a wire to ground); a constant current source has zero small-signal current, so it becomes an <b>open circuit</b>. Resistors and the signal source stay. Step 5 gives the gain A<sub>v</sub> = &minus;g<sub>m</sub>(R<sub>D</sub> &#8741; r<sub>o</sub>) when the source is grounded; with R<sub>S</sub> and the body effect the two node equations give a smaller gain, A<sub>v</sub> &asymp; &minus;g<sub>m</sub>R<sub>D</sub>/(1 + (g<sub>m</sub> + g<sub>mb</sub>)R<sub>S</sub>) for r<sub>o</sub> = &infin;. The full treatment of amplifier stages is a separate topic.</p>
+  </div>
+
+  <div class="card">
+    <h3>The complete model: values, and the nudge experiment</h3>
+    <p class="lead" style="margin-top:0">The lecture derives the model by an experiment: set the DC bias, nudge one terminal voltage while the others stay fixed, and measure how the drain current changes. Every nudge adds one element. Choose how much of the model to show, and which nudge to perform.</p>
+    <div class="seg" id="ss-level" role="group" aria-label="Model detail">
+      <button data-l="1" aria-pressed="false">1 &middot; Ideal: g<sub>m</sub></button>
+      <button data-l="2" aria-pressed="false">2 &middot; + r<sub>o</sub></button>
+      <button data-l="3" aria-pressed="false">3 &middot; + g<sub>mb</sub></button>
+      <button data-l="4" aria-pressed="true">4 &middot; + capacitances</button>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label for="ss-vov">V<sub>ov</sub><output id="o-ss-vov"></output></label><input id="ss-vov" type="range" min="0.1" max="0.8" step="0.01"></div>
+      <div class="ctl"><label for="ss-wl">W/L<output id="o-ss-wl"></output></label><input id="ss-wl" type="range" min="5" max="100" step="1"></div>
+      <div class="ctl"><label for="ss-lam">&lambda;<output id="o-ss-lam"></output></label><input id="ss-lam" type="range" min="0.02" max="0.3" step="0.01"></div>
+      <div class="ctl"><label for="ss-vsb">V<sub>SB</sub><output id="o-ss-vsb"></output></label><input id="ss-vsb" type="range" min="0" max="2" step="0.05"></div>
+    </div>
+    <canvas id="cv-ss-model" width="830" height="450" aria-label="Small-signal model of a MOSFET built from controlled current sources, an output resistance and capacitances" style="margin-top:10px"></canvas>
+    <div class="readouts" style="margin-top:10px">
+      <div><span class="k">g<sub>m</sub> = &part;I<sub>D</sub>/&part;V<sub>GS</sub></span><span class="v" id="ss-gm"></span></div>
+      <div><span class="k">r<sub>o</sub> = 1/(&lambda;I<sub>D</sub>)</span><span class="v" id="ss-ro"></span></div>
+      <div><span class="k">g<sub>mb</sub> = &eta;g<sub>m</sub></span><span class="v" id="ss-gmb"></span></div>
+      <div><span class="k">C<sub>GS</sub></span><span class="v" id="ss-cgs"></span></div>
+      <div><span class="k">C<sub>GD</sub></span><span class="v" id="ss-cgd"></span></div>
+      <div><span class="k">C<sub>SB</sub> = C<sub>DB</sub></span><span class="v" id="ss-cjb"></span></div>
+    </div>
+    <p class="caption">Saturation, V<sub>DS</sub> = 1 V, V<sub>TH0</sub> = 0.4 V, &gamma; = 0.4 V<sup>&frac12;</sup>, 2&Phi;<sub>F</sub> = 0.7 V, &micro;<sub>n</sub>C<sub>ox</sub> = 200 &micro;A/V&sup2;. Capacitances are illustrative: L = 0.18 &micro;m, C<sub>ox</sub> = 8.6 fF/&micro;m&sup2;, C<sub>ov</sub> = 0.3 fF/&micro;m, junctions about 1 fF/&micro;m of width. At the lowest detail level the body is assumed tied to the source (v<sub>bs</sub> = 0).</p>
+
+    <h4 style="margin:18px 0 6px">The experiment: nudge one voltage, measure the current</h4>
+    <div class="seg" id="ss-nudge" role="group" aria-label="Which terminal to nudge">
+      <button data-n="gs" aria-pressed="true">Raise V<sub>GS</sub></button>
+      <button data-n="ds" aria-pressed="false">Raise V<sub>DS</sub></button>
+      <button data-n="bs" aria-pressed="false">Raise V<sub>BS</sub></button>
+    </div>
+    <div class="controls"><div class="ctl"><label for="ss-dv">Size of the nudge &Delta;V<output id="o-ss-dv"></output></label><input id="ss-dv" type="range" min="1" max="100" step="1"></div></div>
+    <div class="readouts" style="margin-top:10px">
+      <div><span class="k">&Delta;I<sub>D</sub> measured (full square law)</span><span class="v" id="ss-dim"></span></div>
+      <div><span class="k">&Delta;I<sub>D</sub> predicted by the model</span><span class="v" id="ss-dip"></span></div>
+      <div><span class="k">Which element</span><span class="v" id="ss-el"></span></div>
+      <div><span class="k">Model error</span><span class="v" id="ss-err"></span></div>
+    </div>
+    <p class="caption" id="ss-nudge-note"></p>
+  </div>
+  </div>
+
+  <div class="cols">
+  <div class="card">
+    <h3>The same model for PMOS</h3>
+    <p class="lead" style="margin-top:0">Deriving the model for a PMOS gives exactly the same circuit as for an NMOS. That looks odd: the current source still points from drain to source, although a PMOS conducts from source to drain. The resolution is that the source g<sub>m</sub>v<sub>gs</sub> is only the <em>change</em>. Move the gate and see what happens to the total.</p>
+    <div class="controls"><div class="ctl"><label for="ss-pv">Gate step v<sub>gs</sub> (same for both)<output id="o-ss-pv"></output></label><input id="ss-pv" type="range" min="-100" max="100" step="1"></div></div>
+    <canvas id="cv-ss-p" width="600" height="250" aria-label="Bar comparison of NMOS and PMOS drain current when the gate moves up" style="margin-top:10px"></canvas>
+    <div class="readouts" style="margin-top:10px">
+      <div><span class="k">Small-signal current g<sub>m</sub>v<sub>gs</sub> (D to S)</span><span class="v" id="p-id"></span></div>
+      <div><span class="k">NMOS: total I<sub>DS</sub></span><span class="v" id="p-n"></span></div>
+      <div><span class="k">PMOS: total I<sub>SD</sub></span><span class="v" id="p-p"></span></div>
+    </div>
+    <p class="caption">The NMOS current rises when the gate goes up. For the PMOS the same positive v<sub>gs</sub> <em>reduces</em> the source-to-drain current (|V<sub>GS</sub>| shrinks), which is exactly a D-to-S increment of g<sub>m</sub>v<sub>gs</sub> added to a DC current that flows S-to-D. The model is correct for both; only the DC direction differs.</p>
+  </div>
+
+  <div class="card">
+    <h3>NMOS versus PMOS</h3>
+    <p class="lead" style="margin-top:0">Holes are slower than electrons (&micro;<sub>p</sub>C<sub>ox</sub> &asymp; 0.5&micro;<sub>n</sub>C<sub>ox</sub> in the lecture), so a PMOS of the same W/L carries less current and has a smaller g<sub>m</sub>. Widening it restores the drive, at a price.</p>
+    <div class="controls">
+      <div class="ctl"><label for="ss-mr">&micro;<sub>p</sub>/&micro;<sub>n</sub><output id="o-ss-mr"></output></label><input id="ss-mr" type="range" min="0.2" max="1" step="0.01"></div>
+      <div class="ctl"><label for="ss-lr">&lambda;<sub>p</sub>/&lambda;<sub>n</sub><output id="o-ss-lr"></output></label><input id="ss-lr" type="range" min="0.5" max="3" step="0.05"></div>
+    </div>
+    <canvas id="cv-ss-np" width="600" height="320" aria-label="Grouped bars comparing PMOS to NMOS for equal W over L and for a widened PMOS" style="margin-top:10px"></canvas>
+    <p class="caption">Everything is relative to an NMOS (= 1, dotted line) at the same V<sub>ov</sub>. Blue: PMOS with the same W/L. Orange: PMOS widened by &micro;<sub>n</sub>/&micro;<sub>p</sub> to match the NMOS current and g<sub>m</sub>; its gate capacitance (and area) grows by the same factor. The output resistance is compared at equal drain current: r<sub>o</sub> = 1/(&lambda;I<sub>D</sub>), so a larger &lambda; means a lower r<sub>o</sub>. The slides state that NMOS devices usually offer the higher output resistance, which corresponds to &lambda;<sub>p</sub>/&lambda;<sub>n</sub> &gt; 1; the real value is set by the process, so check the model card. That is why NMOS is preferred wherever possible.</p>
+  </div>
+  </div>
+
+  <div class="cols one">
+  <div class="card">
+    <h3>How a simulator stores the same device (SPICE Level 1)</h3>
+    <p class="lead" style="margin-top:0">A simulator such as SPICE or Cadence has no formulas for &ldquo;gm&rdquo; in its input. It is given a transistor line and a list of process numbers, the model card, and it works everything else out. Nothing in it is new: every parameter is a quantity you have met in modules 1 to 6. <b>Click a parameter</b> to see what it is and which model element it creates.</p>
+    <pre class="netlist" id="sp-net" aria-label="Example netlist"></pre>
+    <div class="pills" id="sp-pills" aria-label="Small-signal elements fed by the selected parameter">
+      <span class="pill" data-e="gm">g<sub>m</sub></span><span class="pill" data-e="ro">r<sub>o</sub></span><span class="pill" data-e="gmb">g<sub>mb</sub></span><span class="pill" data-e="cap">capacitances</span><span class="pill" data-e="dc">DC bias only</span>
+    </div>
+    <div class="info" id="sp-info" aria-live="polite"></div>
+    <p class="caption">Level 1 is the simplest model and the one used in the lecture (typical values for a 0.5 &micro;m process are listed on the slide). Levels 2 and 3 add mobility degradation, velocity saturation and other short-channel corrections; modern simulators use far more detailed models, but their outputs are still the same g<sub>m</sub>, r<sub>o</sub>, g<sub>mb</sub> and capacitances.</p>
+    <details><summary>The full Level 1 parameter list from the slide</summary><div>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th></tr></thead>
+        <tbody>
+          <tr><td>LEVEL</td><td>Model type (1, 2, 3)</td><td>1</td></tr>
+          <tr><td>L, W</td><td>Channel length, width</td><td>DEFL, DEFW</td></tr>
+          <tr><td>LD, WD</td><td>Lateral diffusion length, width</td><td>0</td></tr>
+          <tr><td>VTO</td><td>Zero-bias threshold voltage</td><td>0 V</td></tr>
+          <tr><td>KP</td><td>Transconductance parameter</td><td>2E-5 A/V&sup2;</td></tr>
+          <tr><td>GAMMA</td><td>Bulk threshold parameter</td><td>0 V<sup>&frac12;</sup></td></tr>
+          <tr><td>PHI</td><td>Surface potential</td><td>0.6 V</td></tr>
+          <tr><td>LAMBDA</td><td>Channel-length modulation</td><td>0 V<sup>&minus;1</sup></td></tr>
+          <tr><td>RD, RS, RG, RB</td><td>Ohmic resistance of drain, source, gate, bulk</td><td>0 &Omega;</td></tr>
+          <tr><td>RDS</td><td>Drain-source shunt resistance</td><td>&infin;</td></tr>
+          <tr><td>RSH</td><td>Drain-source diffusion sheet resistance</td><td>0 &Omega;/sq</td></tr>
+          <tr><td>IS, JS</td><td>Bulk p-n saturation current (per area)</td><td>1E-14 A</td></tr>
+          <tr><td>PB</td><td>Bulk p-n potential</td><td>0.8 V</td></tr>
+          <tr><td>CBD, CBS</td><td>Zero-bias bulk-drain, bulk-source capacitance</td><td>0 F</td></tr>
+          <tr><td>CJ, CJSW</td><td>Zero-bias bottom, perimeter capacitance</td><td>0</td></tr>
+          <tr><td>MJ, MJSW</td><td>Bottom, sidewall grading coefficient</td><td>0.5, 0.33</td></tr>
+          <tr><td>FC</td><td>Forward-bias capacitance coefficient</td><td>0.5</td></tr>
+          <tr><td>CGSO, CGDO, CGBO</td><td>Gate overlap capacitances per width</td><td>0</td></tr>
+          <tr><td>NSUB, NSS, NFS</td><td>Substrate doping, surface-state densities</td><td>0</td></tr>
+          <tr><td>TOX</td><td>Oxide thickness</td><td>&infin;</td></tr>
+          <tr><td>TPG</td><td>Gate material (+1 opposite, &minus;1 same as substrate, 0 aluminium)</td><td>+1</td></tr>
+          <tr><td>XJ</td><td>Metallurgical junction depth</td><td>0</td></tr>
+          <tr><td>UCRIT, UEXP, VMAX, NEFF, DELTA</td><td>Level 2 mobility, velocity saturation and width effects</td><td>see slide</td></tr>
+          <tr><td>THETA, ETA, KAPPA</td><td>Level 3 mobility modulation, static feedback, saturation field</td><td>0, 0, 0.2</td></tr>
+          <tr><td>KF, AF</td><td>Flicker noise coefficient, exponent</td><td>0, 1</td></tr>
+        </tbody></table></div>
+    </div></details>
+  </div>
+  </div>
+
+  <div class="cols">
+  <div class="card">
+    <h3>Formulas</h3>
+    <details open><summary>The small-signal parameters</summary><div>
+      \[ g_m=\frac{\partial I_D}{\partial V_{GS}}=\mu_nC_{ox}\frac WL V_{ov}=\sqrt{2\mu_nC_{ox}\tfrac WL I_D}=\frac{2I_D}{V_{ov}},\qquad r_o=\frac{1}{\partial I_D/\partial V_{DS}}\approx\frac{1}{\lambda I_D},\qquad g_{mb}=\frac{\partial I_D}{\partial V_{BS}}=\eta\,g_m \]
+      with \(\eta=\gamma/(2\sqrt{2\Phi_F+V_{SB}})\). The currents are \(i_d=g_mv_{gs}+v_{ds}/r_o+g_{mb}v_{bs}\). The model assumes \(\lambda V_{DS}\ll1\) and saturation.</div></details>
+  </div>
+
+  <div class="card">
+    <h3>Check yourself</h3>
+    <details class="q"><summary>Why must the signal be small for the model to hold?</summary><div class="ans">The model keeps only the first derivative. The next term of the square law, &frac12;kv<sub>gs</sub>&sup2;, grows with the square of the swing and shows up as distortion.</div></details>
+    <details class="q"><summary>Which element would you remove if the source is tied to the body?</summary><div class="ans">g<sub>mb</sub>v<sub>bs</sub>, because v<sub>bs</sub> = 0. The body contributes nothing to the small-signal current in that case.</div></details>
+    <details class="q"><summary>Why does the PMOS model show the same current direction as the NMOS?</summary><div class="ans">The source is an increment, not the total current. A positive v<sub>gs</sub> reduces the PMOS source-to-drain current, which is an increment in the drain-to-source direction.</div></details>
+    <details class="q"><summary>What are the two rules for turning a DC circuit into a small-signal circuit?</summary><div class="ans">Constant voltage sources become shorts (ground) and constant current sources become open circuits; the transistor is replaced by its small-signal model at the bias point.</div></details>
+  </div>
+  </div>
+
+<nav class="pager" aria-label="Module navigation"><a href="#caps">&larr; 6 Capacitances</a><a href="#fin">8 FinFET &rarr;</a></nav>
+</section>
+<!-- ================= MODULE 8: FINFET ================= -->
+<section class="module" id="fin" data-title="8 FinFET">
+  <span class="tag">Module 8</span>
+  <h2>FinFETs: the channel stands up and the width becomes a count</h2>
+  <p class="lead">In a planar MOSFET the gate sits on top of a flat channel. In a FinFET the channel is a thin vertical fin and the gate wraps over its top and both sidewalls, so the gate controls more of the channel perimeter. Because the fin height and width are fixed by the process, you cannot choose any width you like: you choose how many fins to place in parallel.</p>
+
+  <div class="cols one">
+  <div class="card">
+    <h3>The fin, the gate and the effective width</h3>
+    <div class="controls">
+      <div class="ctl"><label for="fn-n">Number of fins N<sub>fin</sub><output id="o-fn-n"></output></label><input id="fn-n" type="range" min="1" max="8" step="1"></div>
+      <div class="ctl"><label for="fn-h">Fin height H<sub>fin</sub><output id="o-fn-h"></output></label><input id="fn-h" type="range" min="20" max="60" step="1"></div>
+      <div class="ctl"><label for="fn-w">Fin width W<sub>fin</sub><output id="o-fn-w"></output></label><input id="fn-w" type="range" min="5" max="15" step="0.5"></div>
+      <div class="ctl"><label for="fn-p">Fin pitch<output id="o-fn-p"></output></label><input id="fn-p" type="range" min="20" max="60" step="1"></div>
+    </div>
+    <canvas id="cv-fin" width="760" height="360" aria-label="Cross-section of several fins with the gate wrapped around each fin" style="margin-top:10px"></canvas>
+    <div class="readouts" style="margin-top:10px">
+      <div><span class="k">W<sub>eff</sub> &asymp; N<sub>fin</sub>(2H<sub>fin</sub> + W<sub>fin</sub>)</span><span class="v" id="fn-weff"></span></div>
+      <div><span class="k">Footprint N<sub>fin</sub> &times; pitch</span><span class="v" id="fn-foot"></span></div>
+      <div><span class="k">Width per footprint</span><span class="v" id="fn-ratio"></span></div>
+      <div><span class="k">Fins for a planar W = 1 &micro;m</span><span class="v" id="fn-need"></span></div>
+    </div>
+    <p class="caption">Blue: the three conduction surfaces of each fin (top and two sidewalls), the ideal tri-gate geometry. Dark: isolation oxide. Grey: the gate that wraps the fins. The width formula is a geometric approximation for this ideal tri-gate; the PDK defines the electrical width and the sizing rules. A tall, thin fin gives much more width than its footprint: that is the point.</p>
+  </div>
+
+  <div class="card">
+    <h3>Multiple fins, pitch and contacts</h3>
+    <p class="lead" style="margin-top:0">Seen from above, the fins are parallel strips that run under the gate from the source contact to the drain contact. Fin pitch sets the spacing of neighbouring fins. They share one gate, one source and one drain, so their currents add.</p>
+    <canvas id="cv-fin-top" width="760" height="300" aria-label="Top view of several parallel fins under one gate between source and drain contacts" style="margin-top:6px"></canvas>
+    <p class="caption">Same fins as above (the sliders drive both pictures). More fins raise the drive current and also the gate capacitance. The contacts and the access regions between contact and gated channel take area beyond the channel, and they add resistance and capacitance of their own, which compact models include as parasitics.</p>
+  </div>
+
+  <div class="card">
+    <h3>Sizing in steps: you pick a fin count, not a width</h3>
+    <p class="lead" style="margin-top:0">A planar designer can draw any W. With fins the width comes in whole multiples of one fin, W<sub>unit</sub> = 2H<sub>fin</sub> + W<sub>fin</sub>. Ask for a target width and see what you actually get.</p>
+    <div class="controls"><div class="ctl"><label for="ft-w">Target effective width<output id="o-ft-w"></output></label><input id="ft-w" type="range" min="0.05" max="0.8" step="0.005"></div></div>
+    <canvas id="cv-fin-step" width="760" height="320" aria-label="Achievable effective width versus requested width, a staircase" style="margin-top:10px"></canvas>
+    <div class="readouts" style="margin-top:10px">
+      <div><span class="k">One fin: W<sub>unit</sub></span><span class="v" id="ft-unit"></span></div>
+      <div><span class="k">Nearest fin count</span><span class="v" id="ft-n"></span></div>
+      <div><span class="k">Width you get</span><span class="v" id="ft-got"></span></div>
+      <div><span class="k">Difference from target</span><span class="v" id="ft-err"></span></div>
+    </div>
+    <p class="caption">The staircase uses the fin height and width chosen in the first card. Small transistors suffer most from this rounding: asking for 1.5 fins is impossible, so 1 and 2 are the only choices. That is why FinFET design talks about fin counts and drive-strength steps, and why ratios such as the 2:1 PMOS-to-NMOS sizing of planar logic become &ldquo;as close as the fin counts allow&rdquo;.</p>
+  </div>
+  </div>
+
+  <div class="cols">
+  <div class="card">
+    <h3>Formulas</h3>
+    <details open><summary>Effective width</summary><div>
+      \[ W_{eff}\approx N_{fin}\,(2H_{fin}+W_{fin}) \]
+      Valid for the ideal tri-gate in the picture. If only the sidewalls conduct (the top is capped), the term W<sub>fin</sub> drops out and W<sub>eff</sub> &asymp; 2N<sub>fin</sub>H<sub>fin</sub>.</div></details>
+    <details><summary>What stays the same as in planar devices</summary><div>The ideas of modules 1 to 7 carry over: the channel charge is set by the gate overdrive, the current by the lateral field, and the small-signal model by the derivatives of the I-V curve. What changes is the width W (now a count of fins), the gate control of the channel, and the parasitics around the fins.</div></details>
+  </div>
+
+  <div class="card">
+    <h3>Check yourself</h3>
+    <details class="q"><summary>A FinFET has H<sub>fin</sub> = 40 nm, W<sub>fin</sub> = 8 nm and 3 fins. What is W<sub>eff</sub>?</summary><div class="ans">3 &times; (2 &times; 40 + 8) = 264 nm.</div></details>
+    <details class="q"><summary>Why does a tall, thin fin give more width per footprint?</summary><div class="ans">The two sidewalls conduct as well as the top, and their length is the fin height, which is much larger than the footprint of one pitch.</div></details>
+    <details class="q"><summary>Why does doubling the fin count not simply double the speed?</summary><div class="ans">Drive current doubles, but so does the gate capacitance, and the contacts and access regions add parasitics that do not scale with the fin count.</div></details>
+    <details class="q"><summary>Why can you not draw a FinFET with a width of 1.5 fins?</summary><div class="ans">The fin dimensions are fixed by the process, so only an integer number of fins is available. Width moves in steps of one fin.</div></details>
+  </div>
+  </div>
+
+<nav class="pager" aria-label="Module navigation"><a href="#ss">&larr; 7 Small-signal</a></nav>
+</section>
+</main>
+
+<footer class="wrap">
+  Notes based on Chapter 2, MOS Device Physics (Razavi). The textbook and lecture slides are the property of their authors and publisher; every figure on this page is drawn from scratch and computed from the equations above.
+  <br><a id="gh-link" href="https://github.com/KULLANICI_ADI/REPO_ADI" target="_blank" rel="noopener">Source code on GitHub</a>
+</footer>
+
+</body>
+</html>
